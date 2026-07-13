@@ -3,6 +3,27 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.9.0 — 2026-07-13
+
+Réserver un vélo — et une correction de fond sur ce que « réservé » veut dire.
+
+- **Bouton « Réserver »** sur la ligne du stock, à côté de « Vendu ». Le vélo est pris par un
+  client, la remise est dans quelques semaines : on saisit la date de remise (facultativement le
+  client et le prix), et c'est tout.
+- **Changement de sémantique — un vélo réservé est une vente.** Il sort immédiatement du stock
+  disponible et compte dans les ventes à la date de réservation. Avant, il était compté comme du
+  stock : l'outil de pré-commande croyait donc avoir en rayon des vélos déjà promis, et aurait
+  recommandé de **commander trop peu**. Les chiffres du rapport et de la pré-commande changent en
+  conséquence.
+- `delivery_at` : nouvelle colonne, la date de remise. Purement logistique, elle n'entre dans
+  aucun calcul commercial.
+- Un réservé ne peut plus être « vendu » une seconde fois, ni proposé dans la liste des vélos
+  disponibles.
+- `stock.php` alerte sur les **réservés sans date de vente** (les quatre venus de la reprise
+  Excel) : sans date, ils ne compteraient ni dans le stock ni dans les ventes.
+- **`install/migrate.php`** : nouveau script de migration, protégé par token et idempotent —
+  `install/db.php` crée les tables absentes mais ne touche pas aux tables existantes.
+
 ## 0.8.0 — 2026-07-13
 
 Nettoyage des doublons hérités de la reprise Excel.

@@ -41,7 +41,7 @@ $fCat    = (string)($_GET['cat'] ?? '');
 $fBrand  = (string)($_GET['brand'] ?? '');
 $fSearch = trim((string)($_GET['q'] ?? ''));
 
-$where  = ['b.status = "vendu"', 'b.sold_at BETWEEN ? AND ?'];
+$where  = ['b.status IN ("vendu","reserve")', 'b.sold_at BETWEEN ? AND ?'];
 $params = [$period['from'], $period['to']];
 $types  = 'ss';
 
@@ -216,9 +216,21 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
                         }
                     ?>
                         <tr>
-                            <td><?= e(fmtDate($sale['sold_at'], 'd.m.Y')) ?></td>
+                            <td>
+                                <?= e(fmtDate($sale['sold_at'], 'd.m.Y')) ?>
+                                <?php if ($sale['status'] === 'reserve'): ?>
+                                    <span class="cell-sub">
+                                        à remettre<?= $sale['delivery_at'] ? ' le ' . e(fmtDate($sale['delivery_at'], 'd.m.Y')) : '' ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td class="muted text-sm col-sm-hide"><?= e($sale['category']) ?></td>
-                            <td><strong><?= e($sale['brand'] . ' ' . $sale['model_name']) ?></strong></td>
+                            <td>
+                                <strong><?= e($sale['brand'] . ' ' . $sale['model_name']) ?></strong>
+                                <?php if ($sale['status'] === 'reserve'): ?>
+                                    <span class="tag tag-reserve">réservé</span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= e($sale['size'] ?? '—') ?></td>
                             <td class="num">
                                 <?= e(chf($sale['sold_price'] !== null

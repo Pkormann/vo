@@ -31,6 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notice = $sold ? 'Vélo marqué vendu.' : 'Ce vélo était déjà vendu.';
     }
 
+    if ($action === 'reserve') {
+        $reserved = reserveBike(
+            $bikeId,
+            (string)($_POST['delivery_at'] ?? ''),
+            ($_POST['sold_price'] ?? '') !== '' ? (float)$_POST['sold_price'] : null,
+            (string)($_POST['customer'] ?? '')
+        );
+
+        $notice = $reserved
+            ? 'Vélo réservé. Il compte comme vendu et sort du stock disponible.'
+            : 'Ce vélo n\'est plus disponible.';
+    }
+
     if ($action === 'delete') {
         $notice = deleteBike($bikeId)
             ? 'Vélo supprimé du stock. L\'historique des ventes n\'a pas été touché.'
@@ -117,6 +130,16 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
     <div class="alert alert-success"><?= e($notice) ?></div>
 <?php endif; ?>
 
+<?php if ($kpis['reserved_undated'] > 0): ?>
+    <div class="alert alert-warn">
+        <strong><?= (int)$kpis['reserved_undated'] ?> vélo<?= $kpis['reserved_undated'] > 1 ? 's' : '' ?>
+        réservé<?= $kpis['reserved_undated'] > 1 ? 's' : '' ?> sans date de vente</strong> —
+        vient de la reprise Excel. Un réservé compte comme une vente : sans date, il n'apparaît ni
+        dans le stock ni dans les ventes. Ouvre la fiche et renseigne « Vendu le »
+        (<a href="<?= e(url('stock.php?status=reserve')) ?>">les voir</a>).
+    </div>
+<?php endif; ?>
+
 <?php if ($duplicates > 0): ?>
     <div class="alert alert-warn">
         <strong><?= (int)$duplicates ?> vélo<?= $duplicates > 1 ? 's' : '' ?> en rayon
@@ -128,8 +151,11 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <div class="grid grid-4">
     <div class="kpi">
-        <span class="kpi-label">Vélos en magasin</span>
+        <span class="kpi-label">Disponibles à la vente</span>
         <span class="kpi-value"><?= (int)$kpis['units'] ?></span>
+        <?php if ($kpis['reserved'] > 0): ?>
+            <span class="kpi-note"><?= (int)$kpis['reserved'] ?> réservé<?= $kpis['reserved'] > 1 ? 's' : '' ?> en plus, déjà vendu<?= $kpis['reserved'] > 1 ? 's' : '' ?></span>
+        <?php endif; ?>
     </div>
     <div class="kpi">
         <span class="kpi-label">Valeur catalogue</span>
@@ -256,10 +282,22 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                                     <span class="<?= $stale ? 'age-stale' : '' ?>"><?= (int)$age ?> j</span>
                                 <?php endif; ?>
                             </td>
-                            <td><span class="tag tag-<?= e($bike['status']) ?>"><?= e(STATUSES[$bike['status']]) ?></span></td>
+                            <td>
+                                <span class="tag tag-<?= e($bike['status']) ?>"><?= e(STATUSES[$bike['status']]) ?></span>
+                                <?php if ($bike['status'] === 'reserve'): ?>
+                                    <span class="cell-sub">
+                                        <?php if ($bike['delivery_at']): ?>
+                                            remise le <?= e(fmtDate($bike['delivery_at'], 'd.m.Y')) ?>
+                                        <?php else: ?>
+                                            date de remise inconnue
+                                        <?php endif; ?>
+                                        <?= $bike['customer'] ? ' · ' . e($bike['customer']) : '' ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <div class="row-actions">
-                                    <?php if ($bike['status'] !== 'vendu'): ?>
+                                    <?php if (in_array($bike['status'], ['stock', 'test'], true)): ?>
                                         <button type="button"
                                                 class="btn btn-sell js-modal"
                                                 data-modal="modal-sell"
@@ -268,6 +306,15 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                                                 data-sold-price="<?= e((string)($bike['list_price'] ?? '')) ?>"
                                                 title="Marquer ce vélo vendu, daté d'aujourd'hui">
                                             <i class="fa-solid fa-tag"></i> Vendu
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-ghost btn-sell js-modal"
+                                                data-modal="modal-reserve"
+                                                data-bike-id="<?= (int)$bike['id'] ?>"
+                                                data-bike-label="<?= e($label . ' · ' . ($bike['size'] ?? '')) ?>"
+                                                data-sold-price="<?= e((string)($bike['list_price'] ?? '')) ?>"
+                                                title="Vendu, mais remis au client plus tard">
+                                            <i class="fa-solid fa-bookmark"></i> Réserver
                                         </button>
                                     <?php endif; ?>
 
@@ -289,6 +336,51 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
             </table>
         </div>
     <?php endif; ?>
+</div>
+
+<div class="modal" id="modal-reserve">
+    <div class="modal-box">
+        <h2 class="modal-title">Réserver</h2>
+        <p class="muted js-bike-label"></p>
+
+        <p class="legend muted text-sm">
+            Le vélo est <strong>vendu</strong> : il sort du stock disponible et compte dans les
+            ventes dès aujourd'hui. La date de remise n'est qu'une information logistique.
+        </p>
+
+        <form method="post">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="reserve">
+            <input type="hidden" name="bike_id" class="js-bike-id" value="">
+
+            <div class="field">
+                <label class="label" for="delivery_at">Remise prévue au client</label>
+                <input class="input" type="date" id="delivery_at" name="delivery_at"
+                       min="<?= e(date('Y-m-d')) ?>">
+            </div>
+
+            <div class="field">
+                <label class="label" for="reserve_customer">
+                    Client <span class="muted text-sm">— facultatif</span>
+                </label>
+                <input class="input" type="text" id="reserve_customer" name="customer"
+                       list="customer-list" placeholder="Nom, prénom" autocomplete="off">
+            </div>
+
+            <div class="field">
+                <label class="label" for="reserve_price">
+                    Prix convenu (CHF) <span class="muted text-sm">— vide : prix catalogue</span>
+                </label>
+                <input class="input js-sold-price" type="number" step="1" id="reserve_price"
+                       name="sold_price" placeholder="prix catalogue">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost js-close">Annuler</button>
+                <button type="submit" class="btn">Confirmer la réservation</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <form method="post" id="form-delete">

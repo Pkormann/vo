@@ -15,7 +15,7 @@ config/      version.php · install.php (token) · db.php · auth.php · prompt.
 includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
 assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente,filtre,copie}.js
 admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
-install/     setup.php · db.php · set_owner.php               (protégés par token)
+install/     setup.php · db.php · migrate.php · set_owner.php   (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
 stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php · export.php · doublons.php
@@ -112,9 +112,10 @@ déclare là, nulle part ailleurs.**
 | `model_id` | INT FK → `vo_models` | |
 | `size` | VARCHAR(10) NULL | 54, M, XL… les deux systèmes coexistent selon les modèles |
 | `color` | VARCHAR(60) NULL | |
-| `status` | ENUM | `stock` · `reserve` · `test` · `vendu` |
+| `status` | ENUM | `stock` · `reserve` · `test` · `vendu` — voir ci-dessous |
 | `entered_at` | DATE NULL | réception. NULL pour les ventes historiques importées |
-| `sold_at` | DATE NULL | |
+| `sold_at` | DATE NULL | date de la vente, **y compris pour un réservé** |
+| `delivery_at` | DATE NULL | remise prévue au client, pour un réservé. Purement logistique |
 | `list_price` | DECIMAL(10,2) NULL | prix catalogue figé à la réception |
 | `purchase_price` | DECIMAL(10,2) NULL | prix d'achat réel ; sinon estimé via `brands.discount_rate` |
 | `sold_price` | DECIMAL(10,2) NULL | |
@@ -123,8 +124,26 @@ déclare là, nulle part ailleurs.**
 | `import_key` | CHAR(32) NULL UNIQUE | empreinte de la ligne source : rend l'import rejouable |
 | `created_at` / `updated_at` | DATETIME | |
 
-`stock`, `reserve` et `test` sont **physiquement présents** en magasin (`STATUSES_PRESENT`) ; seul
-`stock` et `reserve` comptent dans la valeur du stock vendable.
+### Ce que « réservé » signifie
+
+**Un vélo réservé est une vente.** Un client l'a pris ; il ne se revendra pas. Il n'a simplement pas
+encore été remis, parce que la livraison est dans quelques semaines.
+
+Conséquences, et elles sont structurantes :
+
+- Il **sort du stock disponible** dès la réservation (`STATUSES_AVAILABLE = ['stock']`).
+- Il **compte dans les ventes** à la date de réservation (`STATUSES_SOLD = ['vendu', 'reserve']`),
+  donc dans le rapport, le chiffre d'affaires, la rotation et la saisonnalité.
+- Il reste **physiquement présent** en magasin (`STATUSES_PRESENT`), et s'affiche donc dans la page
+  Stock avec sa date de remise.
+
+Le compter comme du stock — ce que faisait la version précédente — conduisait l'outil de
+pré-commande à croire qu'il avait en rayon des vélos déjà promis, et donc à **recommander de
+commander trop peu**.
+
+Un réservé **doit avoir un `sold_at`** : sans lui, il ne compte ni dans le stock ni dans les ventes,
+et disparaît de tous les totaux. `velo.php` le refuse, et `stock.php` alerte sur les cas hérités
+de l'import.
 
 ### `vo_customers`
 
@@ -297,6 +316,15 @@ Marques, modèles et clients sont créés à la volée. Chaque ligne porte une e
 **l'import est rejouable** — une ligne déjà connue est ignorée, jamais dupliquée. Contrepartie assumée :
 deux vélos réellement identiques (même modèle, même taille, même date, même client) sont vus comme un
 seul. Le double import est plus fréquent que le doublon exact.
+
+## Migrations
+
+`install/db.php` crée les tables **absentes** (`CREATE TABLE IF NOT EXISTS`) mais ne touche jamais à
+une table existante. Toute évolution de colonne passe donc par **`install/migrate.php?token=…`**,
+protégé par token et **idempotent** : chaque migration teste son propre état (via
+`information_schema`) avant d'agir, le script est rejouable sans risque.
+
+À relancer après tout déploiement qui annonce une migration.
 
 ## Installation (aucune connexion SSH requise)
 

@@ -92,7 +92,14 @@ function hint(string $key, ?string $label = null): string
     return '<span class="hint" title="' . e(GLOSSAIRE[$key]) . '">' . e($label) . '</span>';
 }
 
-/** Statuts d'un exemplaire. `stock` et `reserve` sont physiquement présents. */
+/**
+ * Statuts d'un exemplaire.
+ *
+ * `reserve` est le statut le plus subtil : le vélo est **vendu** — un client l'a
+ * pris, il ne se revendra pas — mais il n'a pas encore été remis, parce que la
+ * livraison est dans quelques semaines. Il occupe donc physiquement le magasin
+ * tout en étant commercialement parti.
+ */
 const STATUSES = [
     'stock'   => 'En stock',
     'reserve' => 'Réservé',
@@ -100,7 +107,19 @@ const STATUSES = [
     'vendu'   => 'Vendu',
 ];
 
-/** Statuts qui occupent physiquement le magasin. */
+/**
+ * Statuts qui comptent comme une vente.
+ *
+ * Un vélo réservé compte dès la réservation, pas à la remise : sinon l'outil de
+ * pré-commande croirait avoir en rayon un vélo déjà promis, et commanderait trop
+ * peu. La date de remise (`delivery_at`) n'est qu'une information logistique.
+ */
+const STATUSES_SOLD = ['vendu', 'reserve'];
+
+/** Statuts réellement disponibles à la vente. Un réservé n'en est plus. */
+const STATUSES_AVAILABLE = ['stock'];
+
+/** Statuts qui occupent physiquement le magasin (le réservé y est encore). */
 const STATUSES_PRESENT = ['stock', 'reserve', 'test'];
 
 /**
@@ -289,6 +308,40 @@ function sellBike(int $bikeId, string $soldAt, ?float $soldPrice, ?string $custo
     return $touched > 0;
 }
 
+/**
+ * Réserve un exemplaire : le client l'a pris, la remise est plus tard.
+ *
+ * C'est une vente, datée d'aujourd'hui — pas une mise de côté. Le vélo sort donc
+ * du stock disponible immédiatement. `delivery_at` porte la date de remise, qui
+ * est une information logistique et n'entre dans aucun calcul commercial.
+ *
+ * @return bool false si le vélo n'existe pas ou n'est plus disponible.
+ */
+function reserveBike(int $bikeId, ?string $deliveryAt, ?float $price, ?string $customerName): bool
+{
+    if ($bikeId <= 0) {
+        return false;
+    }
+
+    $customer = customerId($customerName);
+    $soldAt   = date('Y-m-d');
+    $delivery = ($deliveryAt !== null && $deliveryAt !== '' && strtotime($deliveryAt))
+        ? date('Y-m-d', strtotime($deliveryAt))
+        : null;
+
+    $stmt = db()->prepare(
+        'UPDATE ' . tbl('bikes') . '
+         SET status = "reserve", sold_at = ?, delivery_at = ?, sold_price = ?, customer_id = ?
+         WHERE id = ? AND status IN ("stock", "test")'
+    );
+    $stmt->bind_param('ssdii', $soldAt, $delivery, $price, $customer, $bikeId);
+    $stmt->execute();
+    $touched = $stmt->affected_rows;
+    $stmt->close();
+
+    return $touched > 0;
+}
+
 /** Date de vente valide : aujourd'hui par défaut, jamais dans le futur. */
 function normalizeSaleDate(string $value): string
 {
@@ -356,7 +409,7 @@ function deleteBike(int $bikeId): bool
 /** Vélos encore en rayon, prêts à être vendus. Groupés par catégorie pour la saisie. */
 function sellableBikes(): array
 {
-    $sql = bikeSelect() . ' WHERE b.status IN ("stock","reserve","test")
+    $sql = bikeSelect() . ' WHERE b.status IN ("stock","test")
                             ORDER BY m.category, br.name, m.name, b.size';
 
     return db()->query($sql)->fetch_all(MYSQLI_ASSOC);
@@ -407,10 +460,10 @@ function bikeSelect(): string
 function familyRotation(string $from, string $to, float $monthsObserved): array
 {
     $sql = 'SELECT m.category, m.family,
-                   SUM(b.status = "vendu" AND b.sold_at BETWEEN ? AND ?)     AS sold,
-                   SUM(b.status IN ("stock","reserve"))                      AS in_stock,
-                   SUM(CASE WHEN b.status IN ("stock","reserve") THEN COALESCE(b.list_price, m.list_price, 0) ELSE 0 END) AS stock_value,
-                   SUM(b.status IN ("stock","reserve") AND m.model_year <= ?) AS old_stock
+                   SUM(b.status IN ("vendu","reserve") AND b.sold_at BETWEEN ? AND ?) AS sold,
+                   SUM(b.status = "stock")                                            AS in_stock,
+                   SUM(CASE WHEN b.status = "stock" THEN COALESCE(b.list_price, m.list_price, 0) ELSE 0 END) AS stock_value,
+                   SUM(b.status = "stock" AND m.model_year <= ?)                      AS old_stock
             FROM ' . tbl('bikes') . ' b
             JOIN ' . tbl('models') . ' m ON m.id = b.model_id
             GROUP BY m.category, m.family
@@ -444,11 +497,13 @@ function familyRotation(string $from, string $to, float $monthsObserved): array
 function stockKpis(): array
 {
     $sql = 'SELECT
-              SUM(b.status IN ("stock","reserve"))                         AS units,
-              SUM(CASE WHEN b.status IN ("stock","reserve")
+              SUM(b.status = "stock")                                      AS units,
+              SUM(CASE WHEN b.status = "stock"
                        THEN COALESCE(b.list_price, m.list_price, 0) END)   AS value,
-              SUM(b.status IN ("stock","reserve") AND m.model_year <= ?)   AS old_units,
-              SUM(b.status = "test")                                       AS test_units
+              SUM(b.status = "stock" AND m.model_year <= ?)                AS old_units,
+              SUM(b.status = "test")                                       AS test_units,
+              SUM(b.status = "reserve")                                    AS reserved,
+              SUM(b.status = "reserve" AND b.sold_at IS NULL)              AS reserved_undated
             FROM ' . tbl('bikes') . ' b
             JOIN ' . tbl('models') . ' m ON m.id = b.model_id';
 
@@ -464,6 +519,9 @@ function stockKpis(): array
         'value'      => (float)($row['value'] ?? 0),
         'old_units'  => (int)($row['old_units'] ?? 0),
         'test_units' => (int)($row['test_units'] ?? 0),
+        'reserved'   => (int)($row['reserved'] ?? 0),
+        // Un réservé sans date de vente ne compte nulle part : il faut le corriger.
+        'reserved_undated' => (int)($row['reserved_undated'] ?? 0),
     ];
 }
 
@@ -473,7 +531,7 @@ function salesByMonth(int $year): array
     $stmt = db()->prepare(
         'SELECT MONTH(sold_at) AS m, COUNT(*) AS n, SUM(COALESCE(sold_price, list_price, 0)) AS ca
          FROM ' . tbl('bikes') . '
-         WHERE status = "vendu" AND YEAR(sold_at) = ?
+         WHERE status IN ("vendu","reserve") AND YEAR(sold_at) = ?
          GROUP BY MONTH(sold_at)'
     );
     $stmt->bind_param('i', $year);
@@ -496,7 +554,7 @@ function salesByCategory(string $from, string $to): array
         'SELECT m.category, COUNT(*) AS n
          FROM ' . tbl('bikes') . ' b
          JOIN ' . tbl('models') . ' m ON m.id = b.model_id
-         WHERE b.status = "vendu" AND b.sold_at BETWEEN ? AND ?
+         WHERE b.status IN ("vendu","reserve") AND b.sold_at BETWEEN ? AND ?
          GROUP BY m.category'
     );
     $stmt->bind_param('ss', $from, $to);
@@ -518,7 +576,7 @@ function salesTotals(string $from, string $to): array
     $stmt = db()->prepare(
         'SELECT COUNT(*) AS n, COALESCE(SUM(COALESCE(sold_price, list_price, 0)), 0) AS ca
          FROM ' . tbl('bikes') . '
-         WHERE status = "vendu" AND sold_at BETWEEN ? AND ?'
+         WHERE status IN ("vendu","reserve") AND sold_at BETWEEN ? AND ?'
     );
     $stmt->bind_param('ss', $from, $to);
     $stmt->execute();
@@ -548,7 +606,7 @@ function seasonProgress(int $referenceYear, ?string $today = null): float
             SUM(DAYOFYEAR(sold_at) <= DAYOFYEAR(?)) AS until_now,
             COUNT(*)                                AS total
          FROM ' . tbl('bikes') . '
-         WHERE status = "vendu" AND YEAR(sold_at) = ?'
+         WHERE status IN ("vendu","reserve") AND YEAR(sold_at) = ?'
     );
     $stmt->bind_param('si', $today, $referenceYear);
     $stmt->execute();
@@ -695,8 +753,8 @@ function salesBySize(string $from, string $to): array
     $stmt = db()->prepare(
         'SELECT m.category,
                 COALESCE(NULLIF(b.size, ""), "?") AS size,
-                SUM(b.status = "vendu" AND b.sold_at BETWEEN ? AND ?) AS sold,
-                SUM(b.status IN ("stock","reserve"))                  AS in_stock
+                SUM(b.status IN ("vendu","reserve") AND b.sold_at BETWEEN ? AND ?) AS sold,
+                SUM(b.status = "stock")                                            AS in_stock
          FROM ' . tbl('bikes') . ' b
          JOIN ' . tbl('models') . ' m ON m.id = b.model_id
          GROUP BY m.category, size

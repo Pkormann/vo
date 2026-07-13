@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $soldP    = $_POST['sold_price']     !== '' ? (float)$_POST['sold_price']     : null;
     $entered  = (string)($_POST['entered_at'] ?? '') ?: null;
     $sold     = (string)($_POST['sold_at'] ?? '') ?: null;
+    $delivery = (string)($_POST['delivery_at'] ?? '') ?: null;
     $notes    = trim((string)($_POST['notes'] ?? ''));
     $customer = customerId((string)($_POST['customer'] ?? ''));
 
@@ -61,6 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($category, CATEGORIES, true))     { $errors[] = 'Catégorie inconnue.'; }
     if (!isset(STATUSES[$status]))                  { $errors[] = 'Statut inconnu.'; }
     if ($status === 'vendu' && $sold === null)      { $errors[] = 'Un vélo vendu a forcément une date de vente.'; }
+    // Un réservé est une vente : sans date, il ne compterait ni dans le stock ni
+    // dans les ventes, et disparaîtrait purement et simplement des totaux.
+    if ($status === 'reserve' && $sold === null)    { $errors[] = 'Un vélo réservé est déjà vendu : indique la date de la réservation dans « Vendu le ».'; }
 
     if (!$errors) {
         $modelId = modelId($brand, $model, $year, $category, $listP);
@@ -69,26 +73,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = db()->prepare(
                 'UPDATE ' . tbl('bikes') . '
                  SET model_id = ?, size = ?, color = ?, status = ?, entered_at = ?, sold_at = ?,
-                     list_price = ?, purchase_price = ?, sold_price = ?, customer_id = ?, notes = ?
+                     delivery_at = ?, list_price = ?, purchase_price = ?, sold_price = ?,
+                     customer_id = ?, notes = ?
                  WHERE id = ?'
             );
-            // 12 variables : i s s s s s d d d i s i
+            // 13 variables : i s s s s s s d d d i s i
             $stmt->bind_param(
-                'isssssdddisi',
-                $modelId, $size, $color, $status, $entered, $sold,
+                'issssssdddisi',
+                $modelId, $size, $color, $status, $entered, $sold, $delivery,
                 $listP, $purchP, $soldP, $customer, $notes, $id
             );
         } else {
             $stmt = db()->prepare(
                 'INSERT INTO ' . tbl('bikes') . '
-                 (model_id, size, color, status, entered_at, sold_at, list_price, purchase_price,
-                  sold_price, customer_id, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                 (model_id, size, color, status, entered_at, sold_at, delivery_at, list_price,
+                  purchase_price, sold_price, customer_id, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            // 11 variables : i s s s s s d d d i s
+            // 12 variables : i s s s s s s d d d i s
             $stmt->bind_param(
-                'isssssdddis',
-                $modelId, $size, $color, $status, $entered, $sold,
+                'issssssdddis',
+                $modelId, $size, $color, $status, $entered, $sold, $delivery,
                 $listP, $purchP, $soldP, $customer, $notes
             );
         }
@@ -218,6 +223,14 @@ renderHeader($id > 0 ? 'Modifier un vélo' : 'Ajouter un vélo', ['css' => ['adm
             <label class="label" for="sold_at">Vendu le</label>
             <input class="input" type="date" id="sold_at" name="sold_at"
                    value="<?= e(field('sold_at', $bike)) ?>">
+        </div>
+
+        <div class="field">
+            <label class="label" for="delivery_at">
+                Remise prévue <span class="muted text-sm">— vélo réservé</span>
+            </label>
+            <input class="input" type="date" id="delivery_at" name="delivery_at"
+                   value="<?= e(field('delivery_at', $bike)) ?>">
         </div>
 
         <div class="field">
