@@ -582,14 +582,82 @@ function salesBySize(string $from, string $to): array
     return $rows;
 }
 
+/** Réglage éditable, ou son défaut si rien n'a été enregistré. */
+function setting(string $name, string $default = ''): string
+{
+    $stmt = db()->prepare('SELECT value FROM ' . tbl('settings') . ' WHERE name = ? LIMIT 1');
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return $row['value'] ?? $default;
+}
+
+/** Enregistre un réglage. Une valeur vide le supprime : le défaut du code reprend la main. */
+function saveSetting(string $name, string $value): void
+{
+    if (trim($value) === '') {
+        $stmt = db()->prepare('DELETE FROM ' . tbl('settings') . ' WHERE name = ?');
+        $stmt->bind_param('s', $name);
+        $stmt->execute();
+        $stmt->close();
+
+        return;
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO ' . tbl('settings') . ' (name, value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE value = VALUES(value)'
+    );
+    $stmt->bind_param('ss', $name, $value);
+    $stmt->execute();
+    $stmt->close();
+}
+
 /**
- * Jeux de données exportables. Chacun est une requête et un nom de fichier :
- * l'idée est de sortir des tableaux déjà agrégés, directement lisibles par un
- * humain ou par un modèle de langage, plutôt qu'un dump brut de la base.
+ * Jeux de données exportables.
+ *
+ * Le premier, `complet`, est l'export intégral : une ligne par exemplaire, tous
+ * statuts et toutes dates confondus, sans filtre de période. C'est celui qu'on
+ * donne à un modèle d'analyse — il contient tout, à lui de recouper.
+ *
+ * Les suivants sont des agrégats prêts à lire, pour l'humain pressé ou pour
+ * recouper rapidement un chiffre.
  */
 function exportDatasets(): array
 {
     return [
+        'complet' => [
+            'label' => 'Export complet',
+            'desc'  => 'Une ligne par vélo — stock et ventes, tout l\'historique, toutes les colonnes. '
+                     . 'C\'est le fichier à donner à l\'IA : il contient tout, sans filtre de période.',
+            'sql'   => 'SELECT b.id,
+                               m.category   AS categorie,
+                               m.family     AS famille,
+                               br.name      AS marque,
+                               m.name       AS modele,
+                               m.model_year AS millesime,
+                               b.size       AS taille,
+                               b.color      AS couleur,
+                               b.status     AS statut,
+                               b.entered_at AS entre_le,
+                               b.sold_at    AS vendu_le,
+                               COALESCE(b.list_price, m.list_price) AS prix_catalogue,
+                               b.purchase_price AS prix_achat,
+                               b.sold_price     AS prix_vente,
+                               br.discount_rate AS rabais_marque_pct,
+                               DATEDIFF(COALESCE(b.sold_at, CURDATE()), b.entered_at) AS jours_en_rayon,
+                               c.name       AS client,
+                               b.notes      AS remarque
+                        FROM ' . tbl('bikes') . ' b
+                        JOIN ' . tbl('models') . ' m  ON m.id = b.model_id
+                        JOIN ' . tbl('brands') . ' br ON br.id = m.brand_id
+                        LEFT JOIN ' . tbl('customers') . ' c ON c.id = b.customer_id
+                        ORDER BY b.sold_at IS NULL, b.sold_at, m.category, m.family',
+            'dated' => false,
+        ],
+
         'ventes' => [
             'label' => 'Ventes détaillées',
             'desc'  => 'Une ligne par vélo vendu sur la période : date, catégorie, famille, modèle, taille, prix, client.',

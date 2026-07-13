@@ -11,7 +11,7 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 ## Arborescence
 
 ```
-config/      version.php · install.php (token) · db.php · auth.php · secrets.php (serveur only) · .htaccess (deny all)
+config/      version.php · install.php (token) · db.php · auth.php · prompt.php · secrets.php (serveur only) · .htaccess
 includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
 assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente,filtre,copie}.js
 admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
@@ -202,16 +202,36 @@ avec la date du jour pré-remplie) l'appellent tous les deux.
 
 ## Export et analyse assistée (`export.php`)
 
-Cinq jeux de données en CSV, **déjà agrégés** — l'export n'est pas un dump de la base, c'est ce qui
-se lit directement : `ventes`, `stock`, `rotation`, `tailles`, `mensuel`. Encodés en UTF-8 avec BOM,
-faute de quoi Excel massacre les accents.
+**`complet`** est l'export de référence : une ligne par exemplaire, tous statuts, tout l'historique,
+toutes les colonnes, **sans filtre de période**. C'est le fichier qu'on donne au modèle — il contient
+tout, à lui de recouper. Les autres (`ventes`, `stock`, `rotation`, `tailles`, `mensuel`) sont des
+agrégats d'appoint, bornés à la période. Tous en UTF-8 **avec BOM**, faute de quoi Excel massacre les
+accents.
 
-La page produit aussi un **prompt contextualisé**, rempli avec les chiffres réels de la période
-(volumes, tendance par catégorie, familles qui dorment, familles bientôt épuisées). Il demande au
-modèle : un diagnostic par catégorie **en distinguant une baisse de demande d'une rupture de stock**,
-une analyse par taille, une projection de fin de saison avec la méthode explicitée, une pré-commande
-chiffrée suivant `demande attendue − stock résiduel`, et les limites de son propre raisonnement.
-Il lui interdit d'inventer un chiffre.
+### Le prompt (`config/prompt.php`)
+
+**Il ne contient aucun chiffre, et c'est le point.** Un prompt qui embarque les données périme à
+chaque vente et ne s'améliore jamais ; un prompt qui porte la méthode est un actif qu'on affine
+saison après saison. Les données arrivent par le CSV.
+
+Il s'appuie sur les mesures usuelles du commerce de détail : sell-through, couverture (*weeks of
+cover*), GMROI, classement ABC, courbe de tailles, open-to-buy. Deux principes y sont centraux :
+
+- **Le biais de rupture.** Une baisse de ventes ne prouve pas une baisse de demande : on ne vend pas
+  ce qu'on n'a pas en rayon. Le modèle doit recouper avec le stock avant de conclure à un déclin, et
+  dire explicitement quand il ne peut pas trancher. Le même biais fausse toute courbe de tailles.
+- **L'open-to-buy** : `pré-commande = demande attendue − stock résiduel à l'ouverture de la saison`.
+
+Sa dernière section lui fait lister **les données qui nous manquent** et par quoi commencer.
+
+Le prompt est **éditable depuis la page** et persiste dans `vo_settings` (clé `prompt_analyse`).
+Une valeur vide supprime la ligne : le défaut du code reprend la main. `config/prompt.php` reste
+donc toujours la référence restaurable.
+
+### `vo_settings`
+
+`name` (VARCHAR(60) PK) · `value` (MEDIUMTEXT) · `updated_at`. Réglages éditables depuis l'app.
+Le défaut n'est jamais recopié en base à l'installation : l'absence de ligne signifie « le code fait foi ».
 
 ## Filtrage des tableaux (`assets/js/filtre.js`)
 

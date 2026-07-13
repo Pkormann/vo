@@ -109,6 +109,15 @@ $schema = [
         CONSTRAINT fk_bike_customer FOREIGN KEY (customer_id) REFERENCES ' . tbl('customers') . ' (id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 
+    // Réglages éditables depuis l'application : aujourd'hui le prompt d'analyse.
+    // Une valeur absente signifie « le défaut du code fait foi » — on ne recopie
+    // donc pas le défaut en base à l'installation.
+    tbl('settings') => 'CREATE TABLE IF NOT EXISTS ' . tbl('settings') . ' (
+        name       VARCHAR(60) PRIMARY KEY,
+        value      MEDIUMTEXT  NOT NULL,
+        updated_at DATETIME    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
     // La pré-commande se décide par famille (« combien de Topstone en 2027 ? »),
     // pas par référence catalogue : les modèles MY27 n'existent pas encore quand
     // la décision se prend. Pas de FK vers models, donc, c'est volontaire.

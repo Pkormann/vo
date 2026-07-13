@@ -182,8 +182,18 @@
     font-size: .78rem;
     line-height: 1.5;
     resize: vertical;
-    background: var(--surface-alt);
 }
+
+/* Le fichier qui compte doit se distinguer des exports d'appoint. */
+.row-primary { background: var(--surface-alt); }
+
+.steps { margin: 0 0 .75rem; padding-left: 1.2rem; }
+.steps li { margin-bottom: .3rem; }
+
+.details { margin-top: 1rem; }
+.details summary { cursor: pointer; font-size: .85rem; color: var(--ink-soft); }
+.details summary:hover { color: var(--ink); }
+.details .period-filter { margin-top: .9rem; border-bottom: 0; padding-bottom: 0; }
 
 /* --- Petits écrans (iPhone) ----------------------------------------------- */
 

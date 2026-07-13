@@ -3,6 +3,25 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.6.0 — 2026-07-13
+
+Le prompt d'analyse devient un actif, pas un consommable.
+
+- **Plus aucun chiffre dans le prompt.** Un prompt qui embarque les données périme à chaque
+  vente ; un prompt qui porte la méthode se retravaille saison après saison. Les données
+  arrivent par le CSV joint.
+- **`config/prompt.php`** : prompt fondé sur les mesures usuelles du commerce de détail —
+  sell-through, couverture, GMROI, classement ABC, courbe de tailles, open-to-buy.
+- Il insiste sur le **biais de rupture** : une baisse de ventes ne prouve pas une baisse de
+  demande, on ne vend pas ce qu'on n'a pas en rayon. Le modèle doit recouper avec le stock
+  avant de conclure à un déclin — et le dire quand il ne peut pas trancher.
+- Sa dernière section demande **quelles données nous manquent** pour décider correctement,
+  ce que chacune permettrait, et par quoi commencer.
+- **Export complet** : une ligne par vélo, tout l'historique, toutes les colonnes, sans filtre
+  de période. C'est le fichier à donner à l'IA. Les agrégats restent, en appoint.
+- **Prompt éditable et persistant** (table `vo_settings`) : modifiable depuis la page, avec
+  restauration du texte d'origine. Le défaut du code reste la référence.
+
 ## 0.5.0 — 2026-07-13
 
 Export, analyse assistée, filtres instantanés, mobile.
