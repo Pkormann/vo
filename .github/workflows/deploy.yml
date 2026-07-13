@@ -1,0 +1,45 @@
+name: Deploy to Infomaniak
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install SSH Client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Add Infomaniak SSH key to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.INFOMANIAK_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Set up SSH key
+        env:
+          INFOMANIAK_KEY: ${{ secrets.INFOMANIAK_KEY }}
+        run: |
+          echo "$INFOMANIAK_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ls -la ~/.ssh  # Liste les fichiers pour vérifier que la clé est bien créée
+
+      - name: Test SSH connection
+        env:
+          INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
+          INFOMANIAK_USER: ${{ secrets.INFOMANIAK_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no $INFOMANIAK_USER@$INFOMANIAK_HOST "echo SSH connection successful"
+
+      - name: Copy files to Infomaniak
+        env:
+          INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
+          INFOMANIAK_USER: ${{ secrets.INFOMANIAK_USER }}
+        run: |
+          rsync -avz --delete-after --exclude='data/' --exclude='downloads/' --exclude='assets/uploads/' ./ $INFOMANIAK_USER@$INFOMANIAK_HOST:/home/clients/1559dd4581399476a4690d192f620fae/web/vo/
+
