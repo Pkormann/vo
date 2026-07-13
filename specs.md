@@ -12,8 +12,8 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 
 ```
 config/      version.php · install.php (token) · db.php · auth.php · secrets.php (serveur only) · .htaccess (deny all)
-includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine magasin)
-assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport}.js
+includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
+assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period}.js
 admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
 install/     setup.php · db.php · set_owner.php               (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
@@ -145,13 +145,32 @@ déclare là, nulle part ailleurs.**
 Clé unique : `(season, category, family, size)`. **Pas de FK vers `vo_models`, volontairement** : la
 pré-commande se décide avant que les modèles de la saison suivante n'existent au catalogue.
 
+## Période d'interrogation (`includes/period.php`)
+
+Toutes les pages d'analyse s'interrogent sur une **plage de dates**, jamais sur une année figée.
+Le sélecteur est le même partout (`renderPeriodFilter()`), et circule dans l'URL :
+`?range=ytd|last12|prev_year|season|all|custom` (+ `from` / `to` en mode `custom`).
+
+`season` court d'octobre à septembre : c'est le rythme des millésimes, donc celui des pré-commandes.
+
+Une période porte **toujours sa période de comparaison** : la même durée, décalée d'un an
+(`prev_from` / `prev_to`). Comparer six mois de 2026 à douze mois de 2025 ne veut rien dire ;
+ici la comparaison est à durée égale et à saison égale, par construction.
+
+Entrées invalides : dates inversées → remises à l'endroit ; date illisible ou préréglage inconnu →
+repli sur le défaut. Jamais de plage vide, qui se lirait à tort comme « aucune vente ».
+
+**Le stock ne dépend pas de la période** : c'est une photo de l'instant. Interroger « mars à juin »
+compare donc les ventes de ce trimestre au stock d'aujourd'hui — c'est bien ce qu'on veut pour
+décider quoi commander.
+
 ## Calculs de décision (`includes/catalog.php`)
 
 Ces formules ne vivent qu'ici. Aucune page ne les réimplémente.
 
 | Mesure | Définition |
 |---|---|
-| **Couverture** | `stock ÷ (ventes ÷ mois observés)` — nombre de mois de stock au rythme de vente actuel |
+| **Couverture** | `stock ÷ (ventes ÷ mois de la période)` — nombre de mois de stock au rythme observé |
 | **Dormant** | couverture > 6 mois, ou stock sans aucune vente sur la période |
 | **Tension** | couverture < 2 mois : rupture probable avant la fin de saison |
 | **Saisonnalité** | `seasonProgress()` — part des ventes de l'an dernier réalisées avant le même jour. Annualiser en juillet en multipliant par 12/7 supposerait qu'un vélo se vende autant en janvier qu'en mai : c'est faux |
