@@ -91,6 +91,7 @@ function navItems(): array
         ['href' => 'precommande.php',  'label' => 'Pré-commande',    'roles' => ['owner', 'admin']],
         ['href' => 'marques.php',      'label' => 'Marques',         'roles' => ['owner', 'admin']],
         ['href' => 'export.php',       'label' => 'Export',          'roles' => ['owner', 'admin']],
+        ['href' => 'doublons.php',     'label' => 'Doublons',        'roles' => ['owner', 'admin']],
         ['href' => 'admin/users.php',  'label' => 'Utilisateurs',    'roles' => ['owner']],
         ['href' => 'admin/audit.php',  'label' => 'Audit',           'roles' => ['owner']],
         ['href' => 'admin/stats.php',  'label' => 'Statistiques',    'roles' => ['owner']],

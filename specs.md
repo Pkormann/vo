@@ -18,7 +18,7 @@ admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
 install/     setup.php · db.php · set_owner.php               (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
-stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php · export.php   (owner + admin)
+stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php · export.php · doublons.php
 ```
 
 ## Conventions
@@ -186,6 +186,22 @@ le stock reporté.
 `splitBySize()` éclate une quantité en tailles selon le mix de ventes observé, par la **méthode du plus
 grand reste** : donner le reliquat d'arrondi à la taille la plus vendue gonflerait la taille dominante à
 chaque commande et affamerait les tailles rares.
+
+## Doublons de la reprise Excel (`doublons.php`)
+
+Un vélo vendu dans le fichier des ventes mais **jamais retiré du fichier de stock** existe deux fois
+en base : une ligne `stock`, une ligne `vendu`. Le marquer vendu créerait **une seconde vente** et
+fausserait tous les volumes.
+
+`suspectedDuplicates()` repère les exemplaires en rayon dont un jumeau (même `model_id`, même `size`)
+est déjà vendu. C'est une **suspicion, pas une certitude** — deux exemplaires identiques en rayon sont
+légitimes — donc rien n'est supprimé automatiquement.
+
+La correction est toujours la même : **supprimer la ligne de stock**, jamais la marquer vendue.
+L'historique des ventes n'est pas touché.
+
+`deleteBike()` est le seul endroit où un exemplaire est supprimé (`velo.php`, `stock.php`,
+`doublons.php`).
 
 ## Vendre un vélo
 

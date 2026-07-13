@@ -35,10 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
 
     if (($_POST['action'] ?? '') === 'delete' && $id > 0) {
-        $stmt = db()->prepare('DELETE FROM ' . tbl('bikes') . ' WHERE id = ?');
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
-        $stmt->close();
+        deleteBike($id);
 
         header('Location: ' . url('stock.php'));
         exit;

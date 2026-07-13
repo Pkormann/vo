@@ -182,11 +182,11 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Famille</th>
-                            <th class="num">Stock</th>
-                            <th class="num">Vendus</th>
-                            <th class="num">Mois de stock</th>
-                            <th class="num">Valeur</th>
+                            <th><?= hint('famille') ?></th>
+                            <th class="num"><?= hint('en_stock', 'Stock') ?></th>
+                            <th class="num"><?= hint('vendus', 'Vendus') ?></th>
+                            <th class="num"><?= hint('mois_de_stock', 'Mois de stock') ?></th>
+                            <th class="num"><?= hint('valeur_stock', 'Valeur') ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -237,9 +237,9 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                     <tr>
                         <th>Catégorie</th>
                         <th>Taille</th>
-                        <th class="num"><span class="hint" title="Vélos vendus dans cette taille pendant la période">Vendus</span></th>
-                        <th class="num"><span class="hint" title="Vélos actuellement en rayon dans cette taille">En stock</span></th>
-                        <th class="num"><span class="hint" title="Mois de stock : combien de temps cette taille tiendrait au rythme observé">Mois de stock</span></th>
+                        <th class="num"><?= hint('vendus', 'Vendus') ?></th>
+                        <th class="num"><?= hint('en_stock', 'En stock') ?></th>
+                        <th class="num"><?= hint('mois_de_stock', 'Mois de stock') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -296,13 +296,13 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
             <thead>
                 <tr>
                     <th>Catégorie</th>
-                    <th><span class="hint" title="Regroupe les déclinaisons d'un même vélo : Addict RC 10, 20, 30 forment la famille « Addict RC »">Famille</span></th>
-                    <th class="num"><span class="hint" title="Nombre de vélos vendus pendant la période interrogée">Vendus</span></th>
-                    <th class="num"><span class="hint" title="Nombre de vélos actuellement en rayon (aujourd'hui, pas sur la période)">En stock</span></th>
-                    <th class="num"><span class="hint" title="Vélos en rayon dont le millésime a déjà un an ou plus : ce sont eux qui se décotent">Millésimes anciens</span></th>
-                    <th class="num"><span class="hint" title="Valeur du stock au prix catalogue, en francs">Valeur stock</span></th>
-                    <th class="num"><span class="hint" title="Combien de mois le stock actuel tiendrait au rythme de vente de la période">Mois de stock</span></th>
-                    <th><span class="hint" title="dort = ne pas recommander · bientôt épuisé = commander vite · sain = rien à faire">Verdict</span></th>
+                    <th><?= hint('famille') ?></th>
+                    <th class="num"><?= hint('vendus', 'Vendus') ?></th>
+                    <th class="num"><?= hint('en_stock', 'En stock') ?></th>
+                    <th class="num"><?= hint('millesimes_anciens', 'Millésimes anciens') ?></th>
+                    <th class="num"><?= hint('valeur_stock', 'Valeur stock') ?></th>
+                    <th class="num"><?= hint('mois_de_stock', 'Mois de stock') ?></th>
+                    <th><?= hint('verdict', 'Verdict') ?></th>
                 </tr>
             </thead>
             <tbody>

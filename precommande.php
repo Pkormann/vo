@@ -135,13 +135,13 @@ renderHeader('Pré-commande ' . $season, ['css' => ['admin', 'app'], 'icons' => 
                 <thead>
                     <tr>
                         <th>Catégorie</th>
-                        <th>Famille</th>
-                        <th class="num">Vendus <?= (int)$year ?></th>
-                        <th class="num">Demande attendue</th>
-                        <th class="num">En stock</th>
-                        <th class="num">Restera en rayon</th>
-                        <th class="num">Proposition</th>
-                        <th class="num">À commander</th>
+                        <th><?= hint('famille') ?></th>
+                        <th class="num"><?= hint('vendus', 'Vendus ' . $year) ?></th>
+                        <th class="num"><?= hint('demande_attendue', 'Demande attendue') ?></th>
+                        <th class="num"><?= hint('en_stock', 'En stock') ?></th>
+                        <th class="num"><?= hint('restera', 'Restera en rayon') ?></th>
+                        <th class="num"><?= hint('proposition', 'Proposition') ?></th>
+                        <th class="num"><?= hint('a_commander', 'À commander') ?></th>
                         <th>Répartition des tailles</th>
                     </tr>
                 </thead>

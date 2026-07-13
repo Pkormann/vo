@@ -3,6 +3,26 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.8.0 — 2026-07-13
+
+Nettoyage des doublons hérités de la reprise Excel.
+
+- **`doublons.php`** : liste les vélos encore « en rayon » alors qu'un vélo identique (même modèle,
+  même taille) figure déjà comme vendu — le cas du vélo vendu dans le fichier des ventes mais jamais
+  retiré du fichier de stock. Suppression par lot, tout coché par défaut, décochable ligne à ligne.
+- C'est une **suspicion, pas une certitude** : un vrai second exemplaire en rayon est légitime. Rien
+  n'est supprimé automatiquement, et l'historique des ventes n'est jamais touché.
+- `stock.php` : bouton **corbeille sur la ligne** — retirer un vélo du stock sans enregistrer de
+  vente (doublon, erreur de saisie). Et une alerte en tête de page quand des doublons traînent.
+- `deleteBike()` centralise la suppression : `velo.php`, `stock.php` et `doublons.php` l'appellent,
+  au lieu d'en avoir chacun une copie.
+
+## 0.7.1 — 2026-07-13
+
+- `marques.php` : « Argent engagé » ne voulait rien dire pour personne. Devient
+  **« Ce que le stock a coûté »**, avec « Valeur en rayon » et « Marge brute potentielle »
+  en regard, et une infobulle sur chacun.
+
 ## 0.7.0 — 2026-07-13
 
 Le prompt devient versionné : on peut l'éditer sans risque.

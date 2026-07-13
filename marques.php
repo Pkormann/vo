@@ -74,17 +74,19 @@ renderHeader('Marques et achats', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <div class="grid grid-4">
     <div class="kpi">
-        <span class="kpi-label">Stock au prix catalogue</span>
+        <span class="kpi-label"><?= hint('valeur_rayon', 'Valeur en rayon') ?></span>
         <span class="kpi-value"><?= e(chf($catalogueValue, false)) ?></span>
+        <span class="kpi-note">au prix catalogue</span>
     </div>
     <div class="kpi">
-        <span class="kpi-label">Argent engagé (estimé)</span>
+        <span class="kpi-label"><?= hint('a_coute', 'Ce que le stock a coûté') ?></span>
         <span class="kpi-value"><?= e(chf($engagedValue, false)) ?></span>
-        <span class="kpi-note">au rabais fournisseur saisi</span>
+        <span class="kpi-note">prix d'achat estimé, rabais déduit</span>
     </div>
     <div class="kpi">
-        <span class="kpi-label">Marge brute en rayon</span>
+        <span class="kpi-label"><?= hint('marge_potentielle', 'Marge brute potentielle') ?></span>
         <span class="kpi-value"><?= e(chf($catalogueValue - $engagedValue, false)) ?></span>
+        <span class="kpi-note">si tout part au prix affiché</span>
     </div>
     <div class="kpi <?= $unknownRate > 0 ? 'kpi-alert' : '' ?>">
         <span class="kpi-label">Vélos sans taux connu</span>
@@ -115,9 +117,9 @@ renderHeader('Marques et achats', ['css' => ['admin', 'app'], 'icons' => true]);
                         <th>Marque</th>
                         <th class="num">En stock</th>
                         <th class="num">Vendus cette année</th>
-                        <th class="num">Valeur catalogue</th>
-                        <th class="num">Rabais (%)</th>
-                        <th class="num">Argent engagé</th>
+                        <th class="num">Valeur en rayon</th>
+                        <th class="num"><?= hint('rabais', 'Rabais (%)') ?></th>
+                        <th class="num"><?= hint('a_coute', 'A coûté') ?></th>
                     </tr>
                 </thead>
                 <tbody>

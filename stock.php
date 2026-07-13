@@ -31,13 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notice = $sold ? 'Vélo marqué vendu.' : 'Ce vélo était déjà vendu.';
     }
 
-    if ($action === 'delete' && $bikeId > 0) {
-        $stmt = db()->prepare('DELETE FROM ' . tbl('bikes') . ' WHERE id = ?');
-        $stmt->bind_param('i', $bikeId);
-        $stmt->execute();
-        $stmt->close();
-
-        $notice = 'Vélo supprimé.';
+    if ($action === 'delete') {
+        $notice = deleteBike($bikeId)
+            ? 'Vélo supprimé du stock. L\'historique des ventes n\'a pas été touché.'
+            : 'Vélo introuvable.';
     }
 }
 
@@ -103,7 +100,8 @@ $stmt->close();
 
 $brands    = db()->query('SELECT name FROM ' . tbl('brands') . ' ORDER BY name')->fetch_all(MYSQLI_ASSOC);
 $customers = db()->query('SELECT name FROM ' . tbl('customers') . ' ORDER BY name LIMIT 2000')->fetch_all(MYSQLI_ASSOC);
-$kpis      = stockKpis();
+$kpis       = stockKpis();
+$duplicates = count(suspectedDuplicates());
 
 $shownValue = 0.0;
 foreach ($bikes as $bike) {
@@ -117,6 +115,15 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <?php if ($notice !== ''): ?>
     <div class="alert alert-success"><?= e($notice) ?></div>
+<?php endif; ?>
+
+<?php if ($duplicates > 0): ?>
+    <div class="alert alert-warn">
+        <strong><?= (int)$duplicates ?> vélo<?= $duplicates > 1 ? 's' : '' ?> en rayon
+        <?= $duplicates > 1 ? 'sont' : 'est' ?> peut-être déjà vendu<?= $duplicates > 1 ? 's' : '' ?></strong> :
+        un vélo identique figure dans l'historique des ventes. Ne les marque pas « vendu », tu compterais
+        la vente deux fois — <a href="<?= e(url('doublons.php')) ?>">vérifie-les ici</a>.
+    </div>
 <?php endif; ?>
 
 <div class="grid grid-4">
@@ -217,9 +224,9 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                         <th class="col-sm-hide">Catégorie</th>
                         <th>Vélo</th>
                         <th>Taille</th>
-                        <th class="col-sm-hide"><span class="hint" title="Millésime : l'année du modèle, pas celle de l'achat">MY</span></th>
+                        <th class="col-sm-hide"><?= hint('millesime', 'MY') ?></th>
                         <th class="num">Prix</th>
-                        <th class="col-sm-hide"><span class="hint" title="Nombre de jours passés en rayon depuis la réception">Âge</span></th>
+                        <th class="col-sm-hide"><?= hint('age', 'Âge') ?></th>
                         <th>Statut</th>
                         <th></th>
                     </tr>
@@ -267,6 +274,13 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                                     <a class="btn-icon" href="<?= e(url('velo.php?id=' . (int)$bike['id'])) ?>" title="Modifier">
                                         <i class="fa-solid fa-pen"></i>
                                     </a>
+
+                                    <button type="submit" form="form-delete" name="bike_id"
+                                            value="<?= (int)$bike['id'] ?>" class="btn-icon"
+                                            title="Retirer du stock sans enregistrer de vente (doublon, erreur de saisie)"
+                                            onclick="return confirm('Retirer ce vélo du stock ? Aucune vente ne sera enregistrée. À utiliser pour un doublon ou une erreur de saisie.');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -276,6 +290,11 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
         </div>
     <?php endif; ?>
 </div>
+
+<form method="post" id="form-delete">
+    <?= csrfField() ?>
+    <input type="hidden" name="action" value="delete">
+</form>
 
 <div class="modal" id="modal-sell">
     <div class="modal-box">

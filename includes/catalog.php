@@ -15,6 +15,83 @@ require_once __DIR__ . '/helpers.php';
 /** Catégories commerciales, dans l'ordre d'affichage. */
 const CATEGORIES = ['Route', 'Gravel', 'E-bikes', 'VTT', 'Cargo', 'Urbain', 'Kids'];
 
+/**
+ * Glossaire — le vocabulaire de l'application, défini une seule fois.
+ *
+ * Chaque terme obscur d'un en-tête de colonne s'explique ici, et nulle part
+ * ailleurs : une définition recopiée dans trois pages finit par en dire trois
+ * choses différentes. Les pages appellent hint().
+ */
+const GLOSSAIRE = [
+    'famille' => "Regroupe toutes les déclinaisons d'un même vélo : Addict RC 10, 20, 30, Pro et Team "
+               . "forment la famille « Addict RC ». C'est l'unité de décision : on ne pré-commande pas "
+               . "une référence isolée, on décide d'une famille, puis on la répartit en tailles.",
+
+    'millesime' => "L'année du modèle (MY), pas celle de l'achat. Un millésime en retard se décote dès "
+                 . "que le suivant arrive en magasin.",
+
+    'millesimes_anciens' => "Vélos en rayon dont le millésime a déjà un an ou plus : ce sont eux qui "
+                          . "perdent de la valeur.",
+
+    'mois_de_stock' => "Combien de temps le stock actuel tiendrait au rythme de vente observé. "
+                     . "Au-delà de 6 mois la famille dort (ne pas recommander, écouler d'abord) ; "
+                     . "en dessous de 2 mois elle sera bientôt épuisée.",
+
+    'age' => "Nombre de jours passés en rayon depuis la réception du vélo.",
+
+    'delai' => "Nombre de jours passés en rayon entre la réception et la vente.",
+
+    'verdict' => "dort = ne pas recommander · bientôt épuisé = commander vite · sain = rien à faire.",
+
+    'vendus' => "Nombre de vélos vendus pendant la période interrogée.",
+
+    'en_stock' => "Nombre de vélos actuellement en rayon — aujourd'hui, indépendamment de la période.",
+
+    'valeur_stock' => "Valeur du stock au prix catalogue, en francs.",
+
+    'demande_attendue' => "Ce que la famille devrait vendre sur l'année entière, déduit du rythme "
+                        . "observé et corrigé de la saisonnalité réelle (on ne vend pas autant en "
+                        . "janvier qu'en mai).",
+
+    'restera' => "Ce qu'il restera en rayon à l'ouverture de la prochaine saison, une fois absorbées "
+               . "les ventes du reste de l'année. C'est ce report qu'il faut soustraire — l'oubli qui "
+               . "a fait démarrer 2026 avec 90 vélos route pour 45 de demande annuelle.",
+
+    'proposition' => "Ce que l'outil calcule : demande attendue moins ce qui restera en rayon. "
+                   . "Une suggestion, pas un ordre.",
+
+    'a_commander' => "Ce que tu retiens, toi. Modifie librement : l'écart avec la proposition est "
+                   . "conservé, pour pouvoir juger la méthode l'an prochain.",
+
+    'rabais' => "Le pourcentage que le fournisseur retranche au prix catalogue.",
+
+    'a_coute' => "Prix catalogue moins le rabais : ce que ces vélos t'ont coûté. C'est la trésorerie "
+               . "immobilisée dans le magasin.",
+
+    'valeur_rayon' => "Ce que le stock vaut si tout part au prix affiché en magasin.",
+
+    'marge_potentielle' => "Différence entre la valeur en rayon et ce que le stock a coûté : "
+                         . "ce qu'il rapporterait s'il partait entièrement au prix affiché.",
+];
+
+/**
+ * En-tête avec infobulle. Le libellé affiché peut différer de la clé du glossaire.
+ *
+ * Attention : l'infobulle native ne s'affiche pas au doigt sur mobile. Elle est
+ * donc un confort, jamais le seul endroit où une information vitale est dite —
+ * les légendes sous les tableaux restent nécessaires.
+ */
+function hint(string $key, ?string $label = null): string
+{
+    $label = $label ?? ucfirst(str_replace('_', ' ', $key));
+
+    if (!isset(GLOSSAIRE[$key])) {
+        return e($label);
+    }
+
+    return '<span class="hint" title="' . e(GLOSSAIRE[$key]) . '">' . e($label) . '</span>';
+}
+
 /** Statuts d'un exemplaire. `stock` et `reserve` sont physiquement présents. */
 const STATUSES = [
     'stock'   => 'En stock',
@@ -222,6 +299,58 @@ function normalizeSaleDate(string $value): string
     }
 
     return date('Y-m-d', min($ts, time()));
+}
+
+/**
+ * Doublons probables : un vélo encore « en rayon » alors qu'un vélo identique
+ * (même modèle, même taille) figure déjà comme vendu.
+ *
+ * Ce cas vient de la reprise des Excel : le vélo était vendu dans le fichier des
+ * ventes, mais n'avait pas été retiré du fichier de stock. Il existe donc deux
+ * fois en base. Le marquer vendu créerait une deuxième vente — il faut supprimer
+ * la ligne de stock.
+ *
+ * C'est une suspicion, pas une certitude : le magasin peut légitimement avoir un
+ * second exemplaire identique en rayon. La décision reste humaine, on ne supprime
+ * jamais tout seul.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function suspectedDuplicates(): array
+{
+    $sql = 'SELECT b.id, b.size, b.color, b.status, b.entered_at,
+                   COALESCE(b.list_price, m.list_price) AS list_price,
+                   m.name AS model_name, m.category, m.model_year, br.name AS brand,
+                   (SELECT COUNT(*) FROM ' . tbl('bikes') . ' v
+                     WHERE v.status = "vendu" AND v.model_id = b.model_id
+                       AND v.size <=> b.size)                       AS sold_count,
+                   (SELECT MAX(v.sold_at) FROM ' . tbl('bikes') . ' v
+                     WHERE v.status = "vendu" AND v.model_id = b.model_id
+                       AND v.size <=> b.size)                       AS last_sold_at
+            FROM ' . tbl('bikes') . ' b
+            JOIN ' . tbl('models') . ' m  ON m.id = b.model_id
+            JOIN ' . tbl('brands') . ' br ON br.id = m.brand_id
+            WHERE b.status IN ("stock", "reserve", "test")
+            HAVING sold_count > 0
+            ORDER BY last_sold_at DESC';
+
+    return db()->query($sql)->fetch_all(MYSQLI_ASSOC);
+}
+
+/** Supprime un exemplaire. Réservé aux erreurs de saisie et aux doublons d'import. */
+function deleteBike(int $bikeId): bool
+{
+    if ($bikeId <= 0) {
+        return false;
+    }
+
+    $stmt = db()->prepare('DELETE FROM ' . tbl('bikes') . ' WHERE id = ?');
+    $stmt->bind_param('i', $bikeId);
+    $stmt->execute();
+    $deleted = $stmt->affected_rows;
+    $stmt->close();
+
+    return $deleted > 0;
 }
 
 /** Vélos encore en rayon, prêts à être vendus. Groupés par catégorie pour la saisie. */

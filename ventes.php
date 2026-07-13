@@ -203,9 +203,7 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
                         <th>Taille</th>
                         <th class="num">Prix</th>
                         <th class="col-sm-hide">Client</th>
-                        <th class="col-sm-hide">
-                            <span class="hint" title="Jours passés en rayon entre la réception et la vente">Délai</span>
-                        </th>
+                        <th class="col-sm-hide"><?= hint('delai', 'Délai') ?></th>
                         <th></th>
                     </tr>
                 </thead>
