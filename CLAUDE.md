@@ -7,14 +7,16 @@ et de liaison fournisseurs/clients. Une partie tourne en local, une partie est p
 ## Stack
 
 PHP 8+, MySQLi, sessions natives, pas de framework. Front : JS vanilla, Chart.js (CDN).
-Prod : Infomaniak, `web/vo/`, déployé par GitHub Actions (rsync) sur push `main`.
+Prod : <https://www.mutatis.ch/vo/> (Infomaniak, `web/vo/`), déployée par GitHub Actions (rsync) sur push `main`.
 BDD MySQL **partagée** avec d'autres projets → toutes nos tables sont préfixées `vo_` (`DB_PREFIX`).
 
 ## Règles non négociables
 
-- **Versionnage** : bumper `APP_VERSION` + `APP_VERSION_DATE` dans `config/version.php` à *chaque*
-  modification, et ajouter une ligne de changelog dans `CHANGELOG.md`.
+- **Versionnage** : bumper `APP_VERSION` + `APP_VERSION_DATE` dans `config/version.php` dès qu'un
+  fichier **déployé** change (php/css/js/htaccess), et ajouter une ligne dans `CHANGELOG.md`.
   MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
+  Une modification qui ne touche que la doc (`*.md`, exclue du rsync) ne bumpe pas : le numéro
+  affiché en pied de page doit correspondre à ce qui tourne réellement sur le site.
 - **specs.md** : mis à jour à chaque changement de schéma, d'endpoint ou de comportement.
   Pas de modif sans mise à jour des specs.
 - **Version affichée** en bas de chaque page (via `includes/layout.php`).

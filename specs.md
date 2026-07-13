@@ -3,7 +3,7 @@
 Application interne de **Version Originale Cycles** (Yverdon-les-Bains).
 Objectif : analyser les données du magasin (Excel), et outiller le suivi stock / fournisseurs / clients.
 
-- **Prod** : Infomaniak, `web/vo/`, servi sous `/vo/`.
+- **Prod** : <https://www.mutatis.ch/vo/> — Infomaniak, `web/vo/`.
 - **Déploiement** : GitHub Actions (`.github/workflows/deploy.yml`), rsync sur push `main`.
 - **Stack** : PHP 8+, MySQLi, sessions natives, pas de framework. Chart.js + Font Awesome via CDN.
 - **Version courante** : voir `config/version.php` — affichée en bas de chaque page.
@@ -85,6 +85,28 @@ repose sur le token et leur idempotence, pas sur une suppression.
 
 Préservés : `config/secrets.php`, `data/`, `uploads/`.
 Jamais envoyés : `analyse/`, `.git/`, `.github/`, `.claude/`, `*.md`.
+
+## Contrôle de la prod
+
+Après un déploiement sensible (ou une migration de serveur), ces réponses doivent être vérifiées :
+
+| URL | Attendu |
+|---|---|
+| `/login.php` | 200 |
+| `/admin/*.php` non connecté | **302** vers `login.php` (jamais 200) |
+| `/config/secrets.php` | 403 (`config/.htaccess`) |
+| `/specs.md` | 403 (`.htaccess` racine) |
+| `/install/setup.php` sans token | 403 |
+| `/analyse/` | 404 (jamais déployé) |
+
+```sh
+base=https://www.mutatis.ch/vo
+for p in /login.php /admin/audit.php /config/secrets.php /specs.md /install/setup.php; do
+  printf '%-26s %s\n' "$p" "$(curl -s -o /dev/null -w '%{http_code}' "$base$p")"
+done
+```
+
+Un `200` sur une page `admin/` signifierait que `checkAuth()` ne s'exécute plus : incident majeur.
 
 <!-- ===================== BLOC PORTABLE — LOGIN / AUDIT / STATS ===================== -->
 
