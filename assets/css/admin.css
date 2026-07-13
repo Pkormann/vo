@@ -1,0 +1,89 @@
+/* Pages d'administration : utilisateurs, audit, statistiques. */
+
+/* --- Tuiles du tableau de bord -------------------------------------------- */
+
+.tool {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: .9rem;
+    align-items: center;
+    transition: border-color .12s ease, transform .12s ease;
+}
+
+.tool:hover { border-color: var(--ink); text-decoration: none; transform: translateY(-1px); }
+
+.tool-icon {
+    grid-row: 1 / 3;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+}
+
+.tool-name { font-weight: 600; }
+.tool-desc { font-size: .82rem; }
+
+/* --- Actions en fin de ligne de tableau ----------------------------------- */
+
+.row-actions {
+    display: flex;
+    gap: .15rem;
+    justify-content: flex-end;
+}
+
+/* --- Audit ---------------------------------------------------------------- */
+
+/* Le user-agent brut est long : on le tronque, l'intégralité reste en title. */
+.table .ua {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+}
+
+.kpi-link {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+    font-size: 1rem;
+}
+
+.kpi-link:hover { background: var(--ink); color: #fff; text-decoration: none; }
+
+.alert-warn .mono { font-family: var(--mono); font-size: .85em; }
+
+/* --- Statistiques --------------------------------------------------------- */
+
+.period-switch { display: flex; gap: .25rem; }
+
+.period-switch a {
+    padding: .3rem .65rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 500;
+}
+
+.period-switch a:hover { background: var(--surface-alt); color: var(--ink); text-decoration: none; }
+.period-switch a.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+.chart { position: relative; height: 240px; }
+.chart-tall { height: 300px; }
+
+/* Le <script type="application/json"> ne doit jamais s'afficher. */
+#stats-data { display: none; }
+
+@media (max-width: 720px) {
+    .table .ua { max-width: 140px; }
+    .card-header { flex-wrap: wrap; gap: .5rem; }
+}

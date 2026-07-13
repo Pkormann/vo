@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: /home/clients/1559dd4581399476a4690d192f620fae/web/vo/
 
 jobs:
   deploy:
@@ -11,35 +19,51 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install SSH Client
-        run: sudo apt-get install -y openssh-client
+      - name: Vérifier la syntaxe PHP
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y php-cli
+          find . -name '*.php' -not -path './.git/*' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
 
-      - name: Add Infomaniak SSH key to known hosts
+      - name: Configurer la clé SSH
+        env:
+          INFOMANIAK_KEY:  ${{ secrets.INFOMANIAK_KEY }}
+          INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.INFOMANIAK_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Set up SSH key
-        env:
-          INFOMANIAK_KEY: ${{ secrets.INFOMANIAK_KEY }}
-        run: |
           echo "$INFOMANIAK_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ls -la ~/.ssh  # Liste les fichiers pour vérifier que la clé est bien créée
+          ssh-keyscan -H "$INFOMANIAK_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Test SSH connection
+      - name: Synchroniser les fichiers
+        env:
+          INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
+          INFOMANIAK_USER: ${{ secrets.INFOMANIAK_USER }}
+        # --delete nettoie les fichiers supprimés du dépôt, MAIS rsync protège
+        # d'office tout ce qui est --exclude : les chemins ci-dessous survivent à
+        # chaque déploiement. Ne jamais ajouter --delete-excluded.
+        run: |
+          rsync -avz --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.claude/' \
+            --exclude='.gitignore' \
+            --exclude='analyse/' \
+            --exclude='config/secrets.php' \
+            --exclude='data/' \
+            --exclude='uploads/' \
+            --exclude='*.md' \
+            --exclude='.DS_Store' \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            ./ "$INFOMANIAK_USER@$INFOMANIAK_HOST:$DEPLOY_PATH"
+
+      - name: Créer les dossiers persistants
         env:
           INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
           INFOMANIAK_USER: ${{ secrets.INFOMANIAK_USER }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no $INFOMANIAK_USER@$INFOMANIAK_HOST "echo SSH connection successful"
-
-      - name: Copy files to Infomaniak
-        env:
-          INFOMANIAK_HOST: ${{ secrets.INFOMANIAK_HOST }}
-          INFOMANIAK_USER: ${{ secrets.INFOMANIAK_USER }}
-        run: |
-          rsync -avz --delete-after --exclude='data/' --exclude='downloads/' --exclude='assets/uploads/' ./ $INFOMANIAK_USER@$INFOMANIAK_HOST:/home/clients/1559dd4581399476a4690d192f620fae/web/vo/
-
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            "$INFOMANIAK_USER@$INFOMANIAK_HOST" \
+            "mkdir -p '${DEPLOY_PATH}data' '${DEPLOY_PATH}uploads' && chmod 750 '${DEPLOY_PATH}data' '${DEPLOY_PATH}uploads'"

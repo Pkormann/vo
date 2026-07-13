@@ -1,2 +1,22 @@
-.github/.DS_Store
-.github/workflows/.DS_Store
+# Secrets — présents uniquement sur le serveur, jamais versionnés
+config/secrets.php
+
+# Espace de travail local : analyses, notes, exports .md — jamais poussé
+analyse/*
+!analyse/README.md
+
+# Données runtime générées sur le serveur
+data/
+uploads/
+
+# Sources Excel du magasin (données commerciales, ne jamais versionner)
+*.xlsx
+*.xls
+*.csv
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

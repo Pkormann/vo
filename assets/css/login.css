@@ -1,0 +1,75 @@
+/* Page de connexion — plein écran, centrée, sans navigation. */
+
+/* body est déjà en flex-column (base.css) : `margin: auto` centre la carte
+   dans l'espace libre et laisse le footer collé en bas. */
+.login-body { background: var(--surface-alt); }
+
+.login-card {
+    width: 100%;
+    max-width: 380px;
+    margin: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem 1.75rem 1.5rem;
+}
+
+.login-head { text-align: center; margin-bottom: 1.5rem; }
+
+.login-head .brand-mark {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto .75rem;
+    font-size: 1rem;
+}
+
+.login-title { font-size: 1.15rem; margin-bottom: .15rem; }
+.login-sub { color: var(--muted); font-size: .82rem; }
+
+/* Champ mot de passe + bouton œil */
+.password-wrap { position: relative; }
+.password-wrap .input { padding-right: 2.6rem; }
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: .35rem;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.password-toggle:hover { color: var(--ink); }
+.password-toggle svg { width: 17px; height: 17px; }
+.password-toggle .icon-hide { display: none; }
+.password-toggle.is-visible .icon-show { display: none; }
+.password-toggle.is-visible .icon-hide { display: block; }
+
+.login-card .btn-block { margin-top: 1.25rem; }
+
+/* --- Pages d'installation (réutilisent la carte de login) ------------------ */
+
+.install-card { max-width: 440px; }
+
+.install-log {
+    margin: 0 0 1.25rem;
+    padding: .75rem .9rem;
+    list-style: none;
+    background: var(--surface-alt);
+    border-radius: var(--radius-sm);
+    font-size: .82rem;
+}
+
+.install-log li { display: flex; justify-content: space-between; gap: 1rem; }
+.install-log li + li { margin-top: .3rem; }
+.install-log .mono { font-family: var(--mono); }
+
+.login-card .mono { font-family: var(--mono); }

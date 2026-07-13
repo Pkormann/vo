@@ -1,0 +1,31 @@
+# --- Sécurité de base -------------------------------------------------------
+
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>
+
+# Les fichiers de travail et de doc ne sont pas servis, même s'ils atterrissent
+# sur le serveur par accident.
+<FilesMatch "\.(md|xlsx|xls|csv|yml|json|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# --- Cache des assets -------------------------------------------------------
+# Les URLs portent déjà ?v=APP_VERSION : le cache est invalidé à chaque version.
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css        "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/svg+xml   "access plus 30 days"
+</IfModule>

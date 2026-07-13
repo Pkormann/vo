@@ -1,0 +1,11 @@
+# Aucun fichier de ce dossier ne doit être servi en HTTP.
+# secrets.php contient les identifiants MySQL en clair.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

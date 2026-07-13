@@ -1,0 +1,360 @@
+/* ==========================================================================
+   VO Cycles — socle commun : variables, reset, layout, composants partagés.
+   Toute règle utilisée par plus d'une page vit ici.
+   ========================================================================== */
+
+:root {
+    /* Palette — épurée, noir/blanc/gris, dans l'esprit vo-cycles.ch */
+    --ink:          #111214;
+    --ink-soft:     #3d4148;
+    --muted:        #6b7280;
+    --line:         #e4e6ea;
+    --surface:      #ffffff;
+    --surface-alt:  #f6f7f9;
+    --bg:           #fbfbfc;
+
+    /* Sémantique — la couleur ne sert qu'à porter du sens */
+    --ok:           #2f855a;
+    --ok-soft:      #e6f4ec;
+    --ko:           #c53030;
+    --ko-soft:      #fdeaea;
+    --warn:         #b7791f;
+    --warn-soft:    #fdf3e2;
+
+    /* Badges de rôle */
+    --role-owner:   #b7791f;
+    --role-admin:   #6b46c1;
+    --role-user:    #6b7280;
+
+    --radius:       8px;
+    --radius-sm:    5px;
+    --shadow:       0 1px 2px rgba(17, 18, 20, .06), 0 4px 12px rgba(17, 18, 20, .04);
+
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --gap:      1.25rem;
+    --page-max: 1200px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3 { margin: 0 0 .5rem; font-weight: 600; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; }
+
+/* --- Barre supérieure ----------------------------------------------------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    padding: .75rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: .6rem; }
+.brand:hover { text-decoration: none; }
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 32px; height: 32px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .02em;
+}
+
+.brand-text { font-weight: 600; font-size: .9rem; }
+
+.nav { display: flex; gap: .25rem; margin-left: 1rem; }
+
+.nav a {
+    padding: .4rem .7rem;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: .875rem;
+    font-weight: 500;
+}
+
+.nav a:hover { background: var(--surface-alt); color: var(--ink); text-decoration: none; }
+.nav a.is-active { background: var(--ink); color: #fff; }
+
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-left: auto;
+    font-size: .85rem;
+}
+
+.username { color: var(--muted); }
+
+/* --- Page ----------------------------------------------------------------- */
+
+.page {
+    flex: 1;
+    width: 100%;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
+}
+
+.page-title { font-size: 1.5rem; margin-bottom: 1.25rem; }
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 1.5rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: .78rem;
+}
+
+.footer-version { font-family: var(--mono); }
+
+/* --- Cartes --------------------------------------------------------------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+}
+
+.card + .card { margin-top: var(--gap); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+
+.grid { display: grid; gap: var(--gap); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+/* --- KPI ------------------------------------------------------------------ */
+
+.kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem 1.15rem;
+}
+
+.kpi-label {
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.kpi-value { font-size: 1.85rem; font-weight: 650; line-height: 1.2; margin-top: .3rem; }
+.kpi-value.is-ok { color: var(--ok); }
+.kpi-value.is-ko { color: var(--ko); }
+.kpi-value.is-warn { color: var(--warn); }
+
+/* --- Boutons -------------------------------------------------------------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: .5rem .9rem;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius-sm);
+    background: var(--ink);
+    color: #fff;
+    font: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .12s ease, background .12s ease;
+}
+
+.btn:hover { opacity: .88; text-decoration: none; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+.btn-ghost:hover { background: var(--surface-alt); }
+
+.btn-danger { background: var(--ko); border-color: var(--ko); }
+.btn-block { width: 100%; }
+
+/* Actions en icône : gris, jamais colorées (cf. préférences projet) */
+.btn-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 30px; height: 30px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.btn-icon:hover { background: var(--surface-alt); color: var(--ink); border-color: var(--line); }
+.btn-icon svg { width: 16px; height: 16px; }
+
+/* --- Formulaires ---------------------------------------------------------- */
+
+.field { margin-bottom: 1rem; }
+
+.label {
+    display: block;
+    margin-bottom: .35rem;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.input, .select {
+    width: 100%;
+    padding: .55rem .7rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font: inherit;
+    font-size: .9rem;
+    color: var(--ink);
+}
+
+.input:focus, .select:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(17, 18, 20, .07);
+}
+
+.check { display: flex; align-items: center; gap: .5rem; font-size: .875rem; color: var(--ink-soft); }
+.check input { width: 15px; height: 15px; accent-color: var(--ink); }
+
+.form-inline { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; }
+.form-inline .field { margin-bottom: 0; }
+.form-inline .input, .form-inline .select { width: auto; min-width: 150px; }
+
+/* --- Alertes -------------------------------------------------------------- */
+
+.alert {
+    padding: .7rem .9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: .875rem;
+    margin-bottom: 1rem;
+}
+
+.alert-error   { background: var(--ko-soft);   border-color: #f5c6c6; color: #8f2323; }
+.alert-success { background: var(--ok-soft);   border-color: #bfe3ce; color: #22613f; }
+.alert-warn    { background: var(--warn-soft); border-color: #f0d9a8; color: #8a5c12; }
+
+/* --- Badges --------------------------------------------------------------- */
+
+.badge {
+    display: inline-block;
+    padding: .12rem .5rem;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 650;
+    letter-spacing: .02em;
+    color: #fff;
+}
+
+.badge-owner { background: var(--role-owner); }
+.badge-admin { background: var(--role-admin); }
+.badge-user  { background: var(--role-user); }
+.badge-ok    { background: var(--ok); }
+.badge-ko    { background: var(--ko); }
+
+/* --- Tables --------------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+}
+
+.table th {
+    padding: .6rem .7rem;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: .6rem .7rem;
+    border-bottom: 1px solid var(--surface-alt);
+    vertical-align: middle;
+}
+
+.table tbody tr:hover { background: var(--surface-alt); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .mono { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); }
+.table tr.is-suspect { background: var(--ko-soft); }
+.table tr.is-suspect:hover { background: #fbdcdc; }
+
+.empty { padding: 2rem; text-align: center; color: var(--muted); font-size: .9rem; }
+
+/* --- Modales -------------------------------------------------------------- */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(17, 18, 20, .45);
+    z-index: 50;
+}
+
+.modal.is-open { display: grid; }
+
+.modal-box {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 18px 48px rgba(17, 18, 20, .22);
+    padding: 1.4rem;
+}
+
+.modal-title { font-size: 1.05rem; margin-bottom: 1rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.25rem; }
+
+/* --- Divers --------------------------------------------------------------- */
+
+.muted { color: var(--muted); }
+.text-sm { font-size: .82rem; }
+.stack > * + * { margin-top: var(--gap); }
+
+@media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; }
+    .nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
+    .topbar-user .username { display: none; }
+}
