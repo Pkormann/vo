@@ -63,6 +63,7 @@ foreach ($rotation as $row) {
 
 usort($tension, static fn(array $a, array $b): int => $b['sold'] <=> $a['sold']);
 
+$sizes    = salesBySize($period['from'], $period['to']);
 $soldThis = salesByCategory($period['from'], $period['to']);
 $soldPrev = salesByCategory($period['prev_from'], $period['prev_to']);
 
@@ -140,17 +141,22 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
     <div class="card">
         <div class="card-header">
             <h2>Ventes par catégorie</h2>
-            <span class="muted text-sm"><?= e($period['label']) ?></span>
+            <span class="muted text-sm">nombre de vélos · <?= e($period['label']) ?></span>
         </div>
         <div class="chart"><canvas id="chart-categories"></canvas></div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h2>Saisonnalité</h2>
-            <span class="muted text-sm">années pleines</span>
+            <h2>Ventes mois par mois</h2>
+            <span class="muted text-sm">nombre de vélos</span>
         </div>
         <div class="chart"><canvas id="chart-months"></canvas></div>
+        <p class="legend muted text-sm">
+            À quel moment de l'année les vélos partent. C'est ce qui permet de projeter la fin
+            de saison : en juillet, on ne multiplie pas les ventes par deux, on regarde ce que
+            les années passées ont fait au second semestre.
+        </p>
     </div>
 </div>
 
@@ -158,7 +164,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
     <div class="card">
         <div class="card-header">
             <h2>Où dort la valeur du stock</h2>
-            <span class="muted text-sm">photo d'aujourd'hui</span>
+            <span class="muted text-sm">francs, au prix catalogue · aujourd'hui</span>
         </div>
         <div class="chart"><canvas id="chart-stock"></canvas></div>
     </div>
@@ -211,6 +217,66 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <div class="card">
     <div class="card-header">
+        <h2>Ventes et stock par taille</h2>
+        <span class="muted text-sm">nombre de vélos</span>
+    </div>
+
+    <p class="legend muted text-sm">
+        Une famille peut être saine en volume et malade en tailles. Les tailles alphabétiques
+        (S/M/L) et numériques (51/54) coexistent selon les modèles : elles ne sont pas mélangées.
+        La colonne <strong>écart</strong> compare le stock au rythme de vente — un stock positif
+        sur une taille qui ne part pas, c'est de l'argent immobilisé.
+    </p>
+
+    <?php if (!$sizes): ?>
+        <p class="empty">Aucune donnée de taille sur cette période.</p>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Taille</th>
+                        <th class="num"><span class="hint" title="Vélos vendus dans cette taille pendant la période">Vendus</span></th>
+                        <th class="num"><span class="hint" title="Vélos actuellement en rayon dans cette taille">En stock</span></th>
+                        <th class="num"><span class="hint" title="Mois de stock : combien de temps cette taille tiendrait au rythme observé">Mois de stock</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($sizes as $row):
+                        $sold  = (int)$row['sold'];
+                        $stock = (int)$row['in_stock'];
+
+                        $months = $sold > 0
+                            ? round($stock / ($sold / $period['months']), 1)
+                            : null;
+                    ?>
+                        <tr>
+                            <td class="muted text-sm"><?= e($row['category']) ?></td>
+                            <td><strong><?= e($row['size']) ?></strong></td>
+                            <td class="num"><?= $sold ?></td>
+                            <td class="num"><?= $stock ?></td>
+                            <td class="num">
+                                <?php if ($stock === 0): ?>
+                                    <span class="muted">—</span>
+                                <?php elseif ($months === null): ?>
+                                    <span class="tag tag-danger">ne se vend pas</span>
+                                <?php elseif ($months > SEUIL_DORMANT): ?>
+                                    <span class="tag tag-warn"><?= e(number_format($months, 1)) ?></span>
+                                <?php else: ?>
+                                    <?= e(number_format($months, 1)) ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+
+<div class="card">
+    <div class="card-header">
         <h2>Rotation par famille</h2>
         <span class="muted text-sm">
             ventes du <?= e(fmtDate($period['from'], 'd.m.Y')) ?> au <?= e(fmtDate($period['to'], 'd.m.Y')) ?>,
@@ -230,13 +296,13 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
             <thead>
                 <tr>
                     <th>Catégorie</th>
-                    <th>Famille</th>
-                    <th class="num">Vendus</th>
-                    <th class="num">En stock</th>
-                    <th class="num">Millésimes anciens</th>
-                    <th class="num">Valeur stock</th>
-                    <th class="num">Mois de stock</th>
-                    <th>Verdict</th>
+                    <th><span class="hint" title="Regroupe les déclinaisons d'un même vélo : Addict RC 10, 20, 30 forment la famille « Addict RC »">Famille</span></th>
+                    <th class="num"><span class="hint" title="Nombre de vélos vendus pendant la période interrogée">Vendus</span></th>
+                    <th class="num"><span class="hint" title="Nombre de vélos actuellement en rayon (aujourd'hui, pas sur la période)">En stock</span></th>
+                    <th class="num"><span class="hint" title="Vélos en rayon dont le millésime a déjà un an ou plus : ce sont eux qui se décotent">Millésimes anciens</span></th>
+                    <th class="num"><span class="hint" title="Valeur du stock au prix catalogue, en francs">Valeur stock</span></th>
+                    <th class="num"><span class="hint" title="Combien de mois le stock actuel tiendrait au rythme de vente de la période">Mois de stock</span></th>
+                    <th><span class="hint" title="dort = ne pas recommander · bientôt épuisé = commander vite · sain = rien à faire">Verdict</span></th>
                 </tr>
             </thead>
             <tbody>

@@ -38,7 +38,12 @@
             plugins: { legend: { position: 'bottom' } },
             scales: {
                 x: { grid: { display: false } },
-                y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gridColor } }
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: gridColor },
+                    title: { display: true, text: 'vélos vendus' }
+                }
             }
         }
     });
@@ -70,7 +75,12 @@
             plugins: { legend: { position: 'bottom' } },
             scales: {
                 x: { grid: { display: false } },
-                y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gridColor } }
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: gridColor },
+                    title: { display: true, text: 'vélos vendus' }
+                }
             }
         }
     });

@@ -3,6 +3,26 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.5.0 — 2026-07-13
+
+Export, analyse assistée, filtres instantanés, mobile.
+
+- **`export.php`** : cinq jeux de données en CSV (ventes détaillées, stock, rotation par famille,
+  ventes par taille, ventes par mois) — des tableaux déjà agrégés, pas un dump brut. Et surtout
+  **un prompt prêt à coller** dans Claude ou ChatGPT, déjà rempli avec les chiffres de la période :
+  il demande un diagnostic par catégorie et par taille, une projection de fin de saison, une
+  recommandation de pré-commande chiffrée, et interdit d'inventer des chiffres.
+- **Filtres instantanés** : le champ de recherche filtre le tableau à la frappe (accents ignorés),
+  les listes déroulantes se soumettent toutes seules. **Le bouton « Filtrer » disparaît.**
+- **Ventes et stock par taille** : nouveau tableau dans le rapport. Une famille peut être saine en
+  volume et malade en tailles.
+- **Unités et tooltips** : « 32 quoi ? » ne se pose plus — les axes portent leur unité (« vélos
+  vendus »), et les en-têtes de colonne obscures ont une infobulle.
+- **« Saisonnalité » devient « Ventes mois par mois »**, avec une phrase expliquant à quoi ça sert
+  (projeter la fin de saison sans multiplier bêtement par deux).
+- **Responsive iPhone** : les colonnes secondaires s'effacent au lieu de forcer un défilement
+  horizontal, les tuiles passent en deux colonnes, la navigation défile au doigt sur une ligne.
+
 ## 0.4.1 — 2026-07-13
 
 Vocabulaire et geste de vente.

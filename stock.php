@@ -146,11 +146,12 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
         </a>
     </div>
 
-    <form class="filters" method="get">
+    <form class="filters js-autosubmit" method="get">
         <div class="field">
             <label class="label" for="q">Recherche</label>
-            <input class="input" type="search" id="q" name="q" value="<?= e($fSearch) ?>"
-                   placeholder="Topstone, Scott…">
+            <input class="input js-filter" type="search" id="q" value="<?= e($fSearch) ?>"
+                   data-target=".js-filterable" placeholder="Filtre à la frappe : Topstone, Scott…"
+                   autocomplete="off">
         </div>
 
         <div class="field">
@@ -195,7 +196,6 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
         </div>
 
         <div class="field field-actions">
-            <button class="btn" type="submit">Filtrer</button>
             <a class="btn btn-ghost" href="<?= e(url('stock.php')) ?>">Réinitialiser</a>
         </div>
     </form>
@@ -203,7 +203,7 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <div class="card">
     <div class="card-header">
-        <h2><?= count($bikes) ?> vélo<?= count($bikes) > 1 ? 's' : '' ?></h2>
+        <h2><span class="js-filter-count"><?= count($bikes) ?></span> vélo<?= count($bikes) > 1 ? 's' : '' ?></h2>
         <span class="muted text-sm">Valeur affichée : <?= e(chf($shownValue)) ?></span>
     </div>
 
@@ -211,15 +211,15 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
         <p class="empty">Aucun vélo ne correspond. Ajuste les filtres, ou ajoute un vélo.</p>
     <?php else: ?>
         <div class="table-wrap">
-            <table class="table">
+            <table class="table js-filterable">
                 <thead>
                     <tr>
-                        <th>Catégorie</th>
+                        <th class="col-sm-hide">Catégorie</th>
                         <th>Vélo</th>
                         <th>Taille</th>
-                        <th>MY</th>
+                        <th class="col-sm-hide"><span class="hint" title="Millésime : l'année du modèle, pas celle de l'achat">MY</span></th>
                         <th class="num">Prix</th>
-                        <th>Âge</th>
+                        <th class="col-sm-hide"><span class="hint" title="Nombre de jours passés en rayon depuis la réception">Âge</span></th>
                         <th>Statut</th>
                         <th></th>
                     </tr>
@@ -232,7 +232,7 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                         $stale = $age !== null && $age > 365 && $bike['status'] !== 'vendu';
                     ?>
                         <tr>
-                            <td class="muted text-sm"><?= e($bike['category']) ?></td>
+                            <td class="muted text-sm col-sm-hide"><?= e($bike['category']) ?></td>
                             <td>
                                 <span class="cell-main"><?= e($label) ?></span>
                                 <?php if ($bike['color']): ?>
@@ -240,9 +240,9 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                                 <?php endif; ?>
                             </td>
                             <td><?= e($bike['size'] ?? '—') ?></td>
-                            <td><?= e((string)($bike['model_year'] ?? '—')) ?></td>
+                            <td class="col-sm-hide"><?= e((string)($bike['model_year'] ?? '—')) ?></td>
                             <td class="num"><?= e(chf($bike['list_price'] !== null ? (float)$bike['list_price'] : null, false)) ?></td>
-                            <td>
+                            <td class="col-sm-hide">
                                 <?php if ($age === null): ?>
                                     <span class="muted">—</span>
                                 <?php else: ?>
@@ -317,4 +317,7 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
     </div>
 </div>
 
-<?php renderFooter(['scripts' => [url('assets/js/modal.js') . '?v=' . APP_VERSION]]); ?>
+<?php renderFooter(['scripts' => [
+    url('assets/js/modal.js')  . '?v=' . APP_VERSION,
+    url('assets/js/filtre.js') . '?v=' . APP_VERSION,
+]]); ?>

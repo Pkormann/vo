@@ -142,7 +142,7 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
         'q'     => $fSearch,
     ]); ?>
 
-    <form class="filters" method="get">
+    <form class="filters js-autosubmit" method="get">
         <input type="hidden" name="range" value="<?= e($period['range']) ?>">
         <input type="hidden" name="from"  value="<?= e($period['from']) ?>">
         <input type="hidden" name="to"    value="<?= e($period['to']) ?>">
@@ -173,12 +173,12 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
 
         <div class="field">
             <label class="label" for="q">Recherche</label>
-            <input class="input" type="search" id="q" name="q" value="<?= e($fSearch) ?>"
-                   placeholder="modèle ou client">
+            <input class="input js-filter" type="search" id="q" value="<?= e($fSearch) ?>"
+                   data-target=".js-filterable" placeholder="Filtre à la frappe : modèle ou client"
+                   autocomplete="off">
         </div>
 
         <div class="field field-actions">
-            <button class="btn" type="submit">Filtrer</button>
             <a class="btn btn-ghost" href="<?= e(url('ventes.php')) ?>">Réinitialiser</a>
         </div>
     </form>
@@ -186,7 +186,7 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
 
 <div class="card">
     <div class="card-header">
-        <h2><?= count($sales) ?> vente<?= count($sales) > 1 ? 's' : '' ?> affichée<?= count($sales) > 1 ? 's' : '' ?></h2>
+        <h2><span class="js-filter-count"><?= count($sales) ?></span> vente<?= count($sales) > 1 ? 's' : '' ?> affichée<?= count($sales) > 1 ? 's' : '' ?></h2>
         <span class="muted text-sm"><?= e(chf($revenue)) ?></span>
     </div>
 
@@ -194,16 +194,18 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
         <p class="empty">Aucune vente pour ces critères.</p>
     <?php else: ?>
         <div class="table-wrap">
-            <table class="table">
+            <table class="table js-filterable">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Catégorie</th>
+                        <th class="col-sm-hide">Catégorie</th>
                         <th>Vélo</th>
                         <th>Taille</th>
                         <th class="num">Prix</th>
-                        <th>Client</th>
-                        <th>Délai</th>
+                        <th class="col-sm-hide">Client</th>
+                        <th class="col-sm-hide">
+                            <span class="hint" title="Jours passés en rayon entre la réception et la vente">Délai</span>
+                        </th>
                         <th></th>
                     </tr>
                 </thead>
@@ -217,7 +219,7 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
                     ?>
                         <tr>
                             <td><?= e(fmtDate($sale['sold_at'], 'd.m.Y')) ?></td>
-                            <td class="muted text-sm"><?= e($sale['category']) ?></td>
+                            <td class="muted text-sm col-sm-hide"><?= e($sale['category']) ?></td>
                             <td><strong><?= e($sale['brand'] . ' ' . $sale['model_name']) ?></strong></td>
                             <td><?= e($sale['size'] ?? '—') ?></td>
                             <td class="num">
@@ -225,8 +227,8 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
                                         ? (float)$sale['sold_price']
                                         : ($sale['list_price'] !== null ? (float)$sale['list_price'] : null), false)) ?>
                             </td>
-                            <td><?= e($sale['customer'] ?? '—') ?></td>
-                            <td><?= $days === null ? '<span class="muted">—</span>' : (int)$days . ' j' ?></td>
+                            <td class="col-sm-hide"><?= e($sale['customer'] ?? '—') ?></td>
+                            <td class="col-sm-hide"><?= $days === null ? '<span class="muted">—</span>' : (int)$days . ' j' ?></td>
                             <td>
                                 <div class="row-actions">
                                     <a class="btn-icon" href="<?= e(url('velo.php?id=' . (int)$sale['id'])) ?>" title="Modifier">
@@ -319,4 +321,5 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
     url('assets/js/period.js') . '?v=' . APP_VERSION,
     url('assets/js/modal.js')  . '?v=' . APP_VERSION,
     url('assets/js/vente.js')  . '?v=' . APP_VERSION,
+    url('assets/js/filtre.js') . '?v=' . APP_VERSION,
 ]]); ?>

@@ -164,11 +164,83 @@
 
 .size-chip b { color: var(--ink); font-weight: 600; }
 
-/* --- Petits écrans -------------------------------------------------------- */
+/* --- Aide contextuelle ---------------------------------------------------- */
 
+/* Un en-tête de colonne dont le sens n'est pas évident porte son explication :
+   pointillé + curseur d'aide, l'infobulle est celle du navigateur (native, donc
+   lisible aussi au clavier et sur les lecteurs d'écran). */
+.hint {
+    border-bottom: 1px dotted var(--muted);
+    cursor: help;
+}
+
+/* --- Export --------------------------------------------------------------- */
+
+.prompt-box {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: .78rem;
+    line-height: 1.5;
+    resize: vertical;
+    background: var(--surface-alt);
+}
+
+/* --- Petits écrans (iPhone) ----------------------------------------------- */
+
+/* Les colonnes secondaires disparaissent au lieu de forcer un défilement
+   horizontal : sur un téléphone, on veut voir le vélo, sa taille et son prix,
+   pas devoir pousser le tableau pour trouver le bouton. */
 @media (max-width: 720px) {
+    .col-sm-hide { display: none; }
+
     .filters .field { flex: 1 1 100%; }
     .filters .field-actions { width: 100%; }
     .filters .field-actions .btn { flex: 1; }
+
     .danger-zone { align-items: flex-start; }
+    .sale-bar { flex-direction: column; align-items: stretch; }
+    .sale-bar .btn { width: 100%; }
+
+    .table th, .table td { padding: .55rem .45rem; }
+    .table { font-size: .82rem; }
+
+    .card { padding: 1rem .85rem; }
+    .kpi { padding: .85rem .9rem; }
+    .kpi-value { font-size: 1.45rem; }
+    .kpi-label { min-height: 0; }
+
+    .page { padding: 1.25rem .75rem 2.5rem; }
+    .page-title { font-size: 1.25rem; }
+
+    /* Le bouton de vente reste pleinement cliquable au pouce. */
+    .btn-sell { padding: .4rem .7rem; }
+
+    .form-actions { flex-direction: column-reverse; }
+    .form-actions .btn { width: 100%; }
+
+    .modal-box { padding: 1.1rem; }
+}
+
+/* La navigation compte huit entrées : à 390 px, elle se casse sur deux lignes et
+   les dernières sortent de l'écran. On en fait une bande qui défile au doigt,
+   chaque entrée restant d'un seul tenant. */
+@media (max-width: 720px) {
+    .nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a { white-space: nowrap; }
+}
+
+@media (max-width: 560px) {
+    .nav { gap: .1rem; }
+    .nav a { padding: .35rem .5rem; font-size: .8rem; }
+
+    /* Deux tuiles par ligne : quatre seraient illisibles, une seule gâcherait
+       la hauteur d'écran. */
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }

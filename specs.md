@@ -13,12 +13,12 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 ```
 config/      version.php · install.php (token) · db.php · auth.php · secrets.php (serveur only) · .htaccess (deny all)
 includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
-assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente}.js
+assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente,filtre,copie}.js
 admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
 install/     setup.php · db.php · set_owner.php               (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
-stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php   (owner + admin)
+stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php · export.php   (owner + admin)
 ```
 
 ## Conventions
@@ -199,6 +199,38 @@ avec la date du jour pré-remplie) l'appellent tous les deux.
 - **Un `sold_price` vide signifie « au prix catalogue »**, et les lectures retombent sur `list_price`.
   On ne recopie jamais le catalogue dans `sold_price` : sinon un prix réellement négocié ne se
   distinguerait plus d'un prix jamais saisi.
+
+## Export et analyse assistée (`export.php`)
+
+Cinq jeux de données en CSV, **déjà agrégés** — l'export n'est pas un dump de la base, c'est ce qui
+se lit directement : `ventes`, `stock`, `rotation`, `tailles`, `mensuel`. Encodés en UTF-8 avec BOM,
+faute de quoi Excel massacre les accents.
+
+La page produit aussi un **prompt contextualisé**, rempli avec les chiffres réels de la période
+(volumes, tendance par catégorie, familles qui dorment, familles bientôt épuisées). Il demande au
+modèle : un diagnostic par catégorie **en distinguant une baisse de demande d'une rupture de stock**,
+une analyse par taille, une projection de fin de saison avec la méthode explicitée, une pré-commande
+chiffrée suivant `demande attendue − stock résiduel`, et les limites de son propre raisonnement.
+Il lui interdit d'inventer un chiffre.
+
+## Filtrage des tableaux (`assets/js/filtre.js`)
+
+Deux mécanismes, et la distinction est volontaire :
+
+- **Les listes déroulantes** (catégorie, marque, période) changent les totaux affichés en tête :
+  elles repartent au serveur, en se soumettant automatiquement au changement. Le bouton « Filtrer »
+  n'a donc plus de raison d'être.
+- **Le champ de recherche** filtre à la frappe les lignes déjà à l'écran, accents et casse ignorés.
+  Il ne touche pas aux totaux — le compteur de la carte affiche donc « n sur N » pour ne pas mentir
+  sur ce qu'on voit. Il ne filtre que les lignes chargées (limite de 500 à 1000 selon la page).
+
+## Interface mobile
+
+Les colonnes secondaires portent la classe `col-sm-hide` : sous 720 px elles s'effacent, plutôt que
+de forcer un défilement horizontal où l'on perdrait le bouton d'action. Les tuiles passent en deux
+colonnes, la navigation devient une bande qui défile au doigt.
+
+Les en-têtes dont le sens n'est pas évident portent un `.hint` (infobulle native, donc accessible).
 
 ## Import des données (`admin/import.php`, rôle owner)
 

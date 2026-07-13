@@ -554,6 +554,127 @@ function splitBySize(int $qty, array $mix): array
     return array_filter($out);
 }
 
+/**
+ * Ventes par taille et par catégorie sur une période, avec le stock actuel en
+ * regard. Les tailles alphabétiques (S/M/L) et numériques (51/54) coexistent
+ * selon les modèles : on ne les mélange donc pas, on les rend telles quelles.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function salesBySize(string $from, string $to): array
+{
+    $stmt = db()->prepare(
+        'SELECT m.category,
+                COALESCE(NULLIF(b.size, ""), "?") AS size,
+                SUM(b.status = "vendu" AND b.sold_at BETWEEN ? AND ?) AS sold,
+                SUM(b.status IN ("stock","reserve"))                  AS in_stock
+         FROM ' . tbl('bikes') . ' b
+         JOIN ' . tbl('models') . ' m ON m.id = b.model_id
+         GROUP BY m.category, size
+         HAVING sold > 0 OR in_stock > 0
+         ORDER BY m.category, sold DESC'
+    );
+    $stmt->bind_param('ss', $from, $to);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    return $rows;
+}
+
+/**
+ * Jeux de données exportables. Chacun est une requête et un nom de fichier :
+ * l'idée est de sortir des tableaux déjà agrégés, directement lisibles par un
+ * humain ou par un modèle de langage, plutôt qu'un dump brut de la base.
+ */
+function exportDatasets(): array
+{
+    return [
+        'ventes' => [
+            'label' => 'Ventes détaillées',
+            'desc'  => 'Une ligne par vélo vendu sur la période : date, catégorie, famille, modèle, taille, prix, client.',
+            'sql'   => 'SELECT b.sold_at AS date, m.category AS categorie, m.family AS famille,
+                               br.name AS marque, m.name AS modele, b.size AS taille,
+                               m.model_year AS millesime,
+                               COALESCE(b.sold_price, b.list_price) AS prix,
+                               c.name AS client
+                        FROM ' . tbl('bikes') . ' b
+                        JOIN ' . tbl('models') . ' m  ON m.id = b.model_id
+                        JOIN ' . tbl('brands') . ' br ON br.id = m.brand_id
+                        LEFT JOIN ' . tbl('customers') . ' c ON c.id = b.customer_id
+                        WHERE b.status = "vendu" AND b.sold_at BETWEEN ? AND ?
+                        ORDER BY b.sold_at',
+            'dated' => true,
+        ],
+
+        'stock' => [
+            'label' => 'Stock actuel',
+            'desc'  => 'Une ligne par vélo en rayon : catégorie, famille, taille, millésime, prix, âge en jours.',
+            'sql'   => 'SELECT m.category AS categorie, m.family AS famille, br.name AS marque,
+                               m.name AS modele, b.size AS taille, m.model_year AS millesime,
+                               COALESCE(b.list_price, m.list_price) AS prix_catalogue,
+                               b.status AS statut, b.entered_at AS entre_le,
+                               DATEDIFF(CURDATE(), b.entered_at) AS age_jours
+                        FROM ' . tbl('bikes') . ' b
+                        JOIN ' . tbl('models') . ' m  ON m.id = b.model_id
+                        JOIN ' . tbl('brands') . ' br ON br.id = m.brand_id
+                        WHERE b.status IN ("stock","reserve","test")
+                        ORDER BY m.category, m.family, b.size',
+            'dated' => false,
+        ],
+
+        'rotation' => [
+            'label' => 'Rotation par famille',
+            'desc'  => 'Le tableau de décision : vendus sur la période, stock, mois de stock, valeur immobilisée.',
+            'sql'   => null,   // construit en PHP, à partir de familyRotation()
+            'dated' => true,
+        ],
+
+        'tailles' => [
+            'label' => 'Ventes par taille',
+            'desc'  => 'Croisement catégorie × taille : ce qui se vend, ce qui reste. La clé des pré-commandes.',
+            'sql'   => null,
+            'dated' => true,
+        ],
+
+        'mensuel' => [
+            'label' => 'Ventes par mois et catégorie',
+            'desc'  => 'La saisonnalité, année par année : indispensable pour projeter la fin de saison.',
+            'sql'   => 'SELECT YEAR(b.sold_at) AS annee, MONTH(b.sold_at) AS mois,
+                               m.category AS categorie, COUNT(*) AS vendus,
+                               SUM(COALESCE(b.sold_price, b.list_price, 0)) AS chiffre_affaires
+                        FROM ' . tbl('bikes') . ' b
+                        JOIN ' . tbl('models') . ' m ON m.id = b.model_id
+                        WHERE b.status = "vendu" AND b.sold_at IS NOT NULL
+                        GROUP BY annee, mois, categorie
+                        ORDER BY annee, mois, categorie',
+            'dated' => false,
+        ],
+    ];
+}
+
+/** Envoie un tableau de lignes en CSV et coupe court. */
+function streamCsv(string $filename, array $rows): void
+{
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $out = fopen('php://output', 'w');
+
+    // BOM : sans lui, Excel ouvre l'UTF-8 en latin-1 et massacre les accents.
+    fwrite($out, "\xEF\xBB\xBF");
+
+    if ($rows) {
+        fputcsv($out, array_keys($rows[0]));
+        foreach ($rows as $row) {
+            fputcsv($out, $row);
+        }
+    }
+
+    fclose($out);
+    exit;
+}
+
 /** Formatage monétaire suisse : 12'999 CHF. */
 function chf(?float $amount, bool $withUnit = true): string
 {

@@ -84,6 +84,12 @@ renderHeader('Tableau de bord', ['css' => ['admin', 'app'], 'icons' => true]);
             <span class="tool-name">Ajouter un vélo</span>
             <span class="tool-desc muted">À la réception d'une livraison.</span>
         </a>
+
+        <a class="card tool" href="<?= e(url('export.php')) ?>">
+            <i class="fa-solid fa-robot tool-icon" aria-hidden="true"></i>
+            <span class="tool-name">Export et analyse</span>
+            <span class="tool-desc muted">Les données en CSV, et le prompt pour les faire analyser.</span>
+        </a>
     </div>
 <?php endif; ?>
 
