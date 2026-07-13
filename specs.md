@@ -12,12 +12,13 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 
 ```
 config/      version.php · install.php (token) · db.php · auth.php · secrets.php (serveur only) · .htaccess (deny all)
-includes/    helpers.php · layout.php · bruteforce.php
-assets/      css/{base,login,admin}.css · js/{login,modal,stats}.js
-admin/       users.php · audit.php · stats.php          (rôle owner)
-install/     setup.php · db.php · set_owner.php          (protégés par token)
+includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine magasin)
+assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport}.js
+admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
+install/     setup.php · db.php · set_owner.php               (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
+stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php   (owner + admin)
 ```
 
 ## Conventions
@@ -61,6 +62,128 @@ préfixées (`DB_PREFIX`, par défaut `vo_`), défini dans `config/secrets.php`.
 | `created_at` | DATETIME | |
 
 Index : `(ip, created_at)`, `(username, created_at)`, `(created_at)`.
+
+## Modèle de données du magasin
+
+### Le principe
+
+**Un vélo est un exemplaire physique unique**, pas une ligne de stock ou une ligne de vente.
+Il entre en magasin (`entered_at`), puis il est vendu (`sold_at`). « Le stock » et « les ventes » ne sont pas
+deux objets : ce sont deux filtres sur `vo_bikes`, selon le statut.
+
+C'est ce qui rend calculables la rotation, l'âge du stock et le délai d'écoulement — trois choses
+impossibles avec les classeurs Excel d'origine, où le même vélo était saisi deux fois, dans deux
+fichiers, sous deux libellés différents (« S6 EVO 2 » au stock, « SuperSix Crb. 2 » en vente).
+
+### `vo_brands`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | INT AI PK | |
+| `name` | VARCHAR(80) UNIQUE | |
+| `discount_rate` | DECIMAL(5,2) NULL | rabais fournisseur en %, sert à estimer le prix d'achat |
+| `active` | TINYINT(1) | |
+
+### `vo_models`
+
+Le référentiel produit. La clé est `(marque, libellé, millésime)` : un même vélo en MY26 et MY27
+sont **deux modèles**, car le prix et les specs changent d'une année à l'autre.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | INT AI PK | |
+| `brand_id` | INT FK → `vo_brands` | |
+| `category` | VARCHAR(20) | Route · Gravel · E-bikes · VTT · Cargo · Urbain · Kids |
+| `family` | VARCHAR(60) | SuperSix, Topstone, Addict RC… — voir `familyOf()` |
+| `name` | VARCHAR(140) | libellé commercial |
+| `model_year` | SMALLINT NULL | millésime |
+| `list_price` | DECIMAL(10,2) NULL | prix catalogue de référence |
+
+La **famille** est l'unité de décision commerciale : on ne pré-commande pas « un Addict RC 30 en 52 »,
+on décide « combien d'Addict RC en 2027 ». `familyOf()` (dans `includes/catalog.php`) replie les
+libellés divergents des trois fichiers sources sur une famille unique. **Toute nouvelle famille se
+déclare là, nulle part ailleurs.**
+
+### `vo_bikes`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | INT AI PK | |
+| `model_id` | INT FK → `vo_models` | |
+| `size` | VARCHAR(10) NULL | 54, M, XL… les deux systèmes coexistent selon les modèles |
+| `color` | VARCHAR(60) NULL | |
+| `status` | ENUM | `stock` · `reserve` · `test` · `vendu` |
+| `entered_at` | DATE NULL | réception. NULL pour les ventes historiques importées |
+| `sold_at` | DATE NULL | |
+| `list_price` | DECIMAL(10,2) NULL | prix catalogue figé à la réception |
+| `purchase_price` | DECIMAL(10,2) NULL | prix d'achat réel ; sinon estimé via `brands.discount_rate` |
+| `sold_price` | DECIMAL(10,2) NULL | |
+| `customer_id` | INT NULL FK → `vo_customers` | `ON DELETE SET NULL` |
+| `notes` | VARCHAR(255) NULL | |
+| `import_key` | CHAR(32) NULL UNIQUE | empreinte de la ligne source : rend l'import rejouable |
+| `created_at` / `updated_at` | DATETIME | |
+
+`stock`, `reserve` et `test` sont **physiquement présents** en magasin (`STATUSES_PRESENT`) ; seul
+`stock` et `reserve` comptent dans la valeur du stock vendable.
+
+### `vo_customers`
+
+`id` · `name` (UNIQUE) · `email` · `phone` · `notes` · `created_at`. Créé à la volée à la saisie d'une vente.
+
+### `vo_preorders`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | INT AI PK | |
+| `season` | SMALLINT | millésime visé, ex. 2027 |
+| `category` + `family` | VARCHAR | l'identité de la ligne de décision |
+| `size` | VARCHAR(10) | vide = quantité totale de la famille |
+| `qty` | INT | ce qui est retenu |
+| `suggested` | INT NULL | ce que l'outil proposait — garde la trace de l'écart de jugement |
+| `note` | VARCHAR(255) NULL | |
+
+Clé unique : `(season, category, family, size)`. **Pas de FK vers `vo_models`, volontairement** : la
+pré-commande se décide avant que les modèles de la saison suivante n'existent au catalogue.
+
+## Calculs de décision (`includes/catalog.php`)
+
+Ces formules ne vivent qu'ici. Aucune page ne les réimplémente.
+
+| Mesure | Définition |
+|---|---|
+| **Couverture** | `stock ÷ (ventes ÷ mois observés)` — nombre de mois de stock au rythme de vente actuel |
+| **Dormant** | couverture > 6 mois, ou stock sans aucune vente sur la période |
+| **Tension** | couverture < 2 mois : rupture probable avant la fin de saison |
+| **Saisonnalité** | `seasonProgress()` — part des ventes de l'an dernier réalisées avant le même jour. Annualiser en juillet en multipliant par 12/7 supposerait qu'un vélo se vende autant en janvier qu'en mai : c'est faux |
+| **Demande attendue** | ventes de l'année ÷ saisonnalité écoulée |
+| **Stock résiduel** | `stock − (demande attendue − déjà vendu)` — ce qui restera en rayon à l'ouverture de la saison |
+| **Pré-commande** | `demande attendue − stock résiduel`, jamais négative |
+
+La dernière ligne est **la correction de l'erreur constatée dans `Proj.S&_MY27.xlsx`** : la saison 2026
+avait démarré avec 90 vélos route disponibles (48 reportés + 42 pré-commandés) pour une demande
+historique de 45 par an, parce que la pré-commande avait été calée sur la demande sans retrancher
+le stock reporté.
+
+`splitBySize()` éclate une quantité en tailles selon le mix de ventes observé, par la **méthode du plus
+grand reste** : donner le reliquat d'arrondi à la taille la plus vendue gonflerait la taille dominante à
+chaque commande et affamerait les tailles rares.
+
+## Import des données (`admin/import.php`, rôle owner)
+
+Les classeurs Excel sont convertis en CSV **en local**, puis téléversés : les données commerciales ne
+transitent jamais par le dépôt (`*.csv` et `analyse/` sont dans `.gitignore`).
+
+Colonnes attendues, dans cet ordre :
+
+```
+marque, categorie, modele, millesime, taille, couleur, prix_catalogue,
+statut, entre_le, vendu_le, prix_vente, client, remarque
+```
+
+Marques, modèles et clients sont créés à la volée. Chaque ligne porte une empreinte MD5 (`import_key`) :
+**l'import est rejouable** — une ligne déjà connue est ignorée, jamais dupliquée. Contrepartie assumée :
+deux vélos réellement identiques (même modèle, même taille, même date, même client) sont vus comme un
+seul. Le double import est plus fréquent que le doublon exact.
 
 ## Installation (aucune connexion SSH requise)
 
@@ -167,6 +290,7 @@ Agrégation SQL côté PHP, données passées à Chart.js via un `<script type="
 
 ## À venir
 
-- Import et analyse des fichiers Excel du magasin (modèle de données à définir sur pièces réelles).
-- Visualisations stock / ventes.
-- Liens fournisseurs et clients.
+- Fiches clients (historique d'achat par personne) — la table existe, la page reste à faire.
+- Pré-commande à la maille taille (aujourd'hui : famille, avec répartition indicative des tailles).
+- Dates d'entrée en stock : absentes des Excel, à saisir pour rendre la rotation exacte plutôt qu'estimée.
+- Liens fournisseurs.

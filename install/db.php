@@ -49,6 +49,82 @@ $schema = [
         INDEX idx_username_date (username, created_at),
         INDEX idx_date          (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    // --- Domaine magasin -------------------------------------------------
+    // Le vélo est un exemplaire physique unique : il entre en stock, puis il
+    // est vendu. Stock et ventes sont deux vues de la même table (vo_bikes),
+    // filtrées sur le statut. C'est ce qui rend la rotation calculable.
+
+    tbl('brands') => 'CREATE TABLE IF NOT EXISTS ' . tbl('brands') . ' (
+        id            INT AUTO_INCREMENT PRIMARY KEY,
+        name          VARCHAR(80)   NOT NULL UNIQUE,
+        discount_rate DECIMAL(5,2)  NULL COMMENT "rabais fournisseur en %, sert à estimer le prix d\'achat",
+        active        TINYINT(1)    NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    tbl('models') => 'CREATE TABLE IF NOT EXISTS ' . tbl('models') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        brand_id   INT          NOT NULL,
+        category   VARCHAR(20)  NOT NULL COMMENT "Route, Gravel, VTT, E-bikes, Cargo, Urbain, Kids",
+        family     VARCHAR(60)  NOT NULL COMMENT "SuperSix, Topstone, Addict RC… regroupe les déclinaisons",
+        name       VARCHAR(140) NOT NULL,
+        model_year SMALLINT     NULL,
+        list_price DECIMAL(10,2) NULL,
+        UNIQUE KEY uq_model (brand_id, name, model_year),
+        INDEX idx_category (category),
+        INDEX idx_family   (family),
+        CONSTRAINT fk_model_brand FOREIGN KEY (brand_id) REFERENCES ' . tbl('brands') . ' (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    tbl('customers') => 'CREATE TABLE IF NOT EXISTS ' . tbl('customers') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        name       VARCHAR(160) NOT NULL UNIQUE,
+        email      VARCHAR(190) NULL,
+        phone      VARCHAR(40)  NULL,
+        notes      VARCHAR(255) NULL,
+        created_at DATETIME     DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    tbl('bikes') => 'CREATE TABLE IF NOT EXISTS ' . tbl('bikes') . ' (
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        model_id       INT          NOT NULL,
+        size           VARCHAR(10)  NULL,
+        color          VARCHAR(60)  NULL,
+        status         ENUM("stock","vendu","test","reserve") NOT NULL DEFAULT "stock",
+        entered_at     DATE         NULL COMMENT "réception : NULL pour les ventes historiques importées",
+        sold_at        DATE         NULL,
+        list_price     DECIMAL(10,2) NULL COMMENT "prix catalogue figé à la réception",
+        purchase_price DECIMAL(10,2) NULL COMMENT "prix d\'achat réel ; sinon estimé via brands.discount_rate",
+        sold_price     DECIMAL(10,2) NULL,
+        customer_id    INT          NULL,
+        notes          VARCHAR(255) NULL,
+        import_key     CHAR(32)     NULL UNIQUE COMMENT "empreinte de la ligne source : rend l\'import rejouable",
+        created_at     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+        updated_at     DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status    (status),
+        INDEX idx_sold_at   (sold_at),
+        INDEX idx_entered   (entered_at),
+        INDEX idx_model     (model_id),
+        CONSTRAINT fk_bike_model    FOREIGN KEY (model_id)    REFERENCES ' . tbl('models') . ' (id),
+        CONSTRAINT fk_bike_customer FOREIGN KEY (customer_id) REFERENCES ' . tbl('customers') . ' (id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    // La pré-commande se décide par famille (« combien de Topstone en 2027 ? »),
+    // pas par référence catalogue : les modèles MY27 n'existent pas encore quand
+    // la décision se prend. Pas de FK vers models, donc, c'est volontaire.
+    tbl('preorders') => 'CREATE TABLE IF NOT EXISTS ' . tbl('preorders') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        season     SMALLINT     NOT NULL COMMENT "millésime visé, ex. 2027",
+        category   VARCHAR(20)  NOT NULL,
+        family     VARCHAR(60)  NOT NULL,
+        size       VARCHAR(10)  NOT NULL DEFAULT "" COMMENT "vide = quantité totale de la famille",
+        qty        INT          NOT NULL DEFAULT 0,
+        suggested  INT          NULL COMMENT "ce que l\'outil proposait : garde la trace de l\'écart de jugement",
+        note       VARCHAR(255) NULL,
+        updated_at DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_preorder (season, category, family, size),
+        INDEX idx_season (season)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 ];
 
 try {

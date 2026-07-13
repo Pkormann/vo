@@ -84,10 +84,15 @@ function renderHeader(string $title, array $opts = []): void
 function navItems(): array
 {
     $all = [
-        ['href' => 'index.php',       'label' => 'Tableau de bord', 'roles' => ['owner', 'admin', 'user']],
-        ['href' => 'admin/users.php', 'label' => 'Utilisateurs',    'roles' => ['owner']],
-        ['href' => 'admin/audit.php', 'label' => 'Audit',           'roles' => ['owner']],
-        ['href' => 'admin/stats.php', 'label' => 'Statistiques',    'roles' => ['owner']],
+        ['href' => 'index.php',        'label' => 'Tableau de bord', 'roles' => ['owner', 'admin', 'user']],
+        ['href' => 'stock.php',        'label' => 'Stock',           'roles' => ['owner', 'admin']],
+        ['href' => 'ventes.php',       'label' => 'Ventes',          'roles' => ['owner', 'admin']],
+        ['href' => 'rapport.php',      'label' => 'Rapport',         'roles' => ['owner', 'admin']],
+        ['href' => 'precommande.php',  'label' => 'Pré-commande',    'roles' => ['owner', 'admin']],
+        ['href' => 'marques.php',      'label' => 'Marques',         'roles' => ['owner', 'admin']],
+        ['href' => 'admin/users.php',  'label' => 'Utilisateurs',    'roles' => ['owner']],
+        ['href' => 'admin/audit.php',  'label' => 'Audit',           'roles' => ['owner']],
+        ['href' => 'admin/stats.php',  'label' => 'Statistiques',    'roles' => ['owner']],
     ];
 
     $role = currentRole();

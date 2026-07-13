@@ -3,6 +3,26 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.2.0 — 2026-07-13
+
+Module magasin : stock, ventes, rapport, pré-commande.
+
+- Modèle de données : le vélo est un **exemplaire physique** avec un cycle de vie
+  (`stock` → `vendu`), et non deux lignes dans deux fichiers. Nouvelles tables
+  `vo_brands`, `vo_models`, `vo_bikes`, `vo_customers`, `vo_preorders`.
+- `stock.php` : ce qui est en rayon, filtrable ; vente en deux clics ; âge de chaque vélo.
+- `velo.php` : réception d'un vélo, correction d'une fiche. Marque, modèle et client
+  se créent à la volée — aucun catalogue à peupler avant de pouvoir travailler.
+- `ventes.php` : historique interrogeable, cumul comparable à date, délai d'écoulement.
+- `rapport.php` : rotation par famille, stock dormant, familles en tension, graphiques.
+- `precommande.php` : proposition par famille (demande attendue − stock résiduel),
+  corrigée de la saisonnalité réelle, avec répartition indicative des tailles.
+- `marques.php` : rabais fournisseur par marque → argent réellement engagé en rayon.
+- `admin/import.php` : import CSV rejouable (empreinte par ligne), pour la reprise des
+  classeurs Excel sans jamais faire transiter les données par le dépôt.
+- `includes/catalog.php` : toutes les mesures de décision (couverture, dormant, tension,
+  saisonnalité, répartition des tailles) au même endroit.
+
 ## 0.1.0 — 2026-07-13
 
 Socle initial.
