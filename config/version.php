@@ -10,5 +10,5 @@
  */
 
 define('APP_NAME',         'VO Cycles — Outils');
-define('APP_VERSION',      '0.4.0');
+define('APP_VERSION',      '0.4.1');
 define('APP_VERSION_DATE', '2026-07-13');

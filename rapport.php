@@ -127,9 +127,12 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
         <span class="kpi-note"><?= (int)$dormantShare ?> % de la valeur du stock</span>
     </div>
     <div class="kpi">
-        <span class="kpi-label">Familles en tension</span>
+        <span class="kpi-label">Bientôt épuisées</span>
         <span class="kpi-value"><?= count($tension) ?></span>
-        <span class="kpi-note">moins de <?= (int)SEUIL_TENSION ?> mois de stock</span>
+        <span class="kpi-note">
+            familles dont il reste moins de <?= (int)SEUIL_TENSION ?> mois de stock :
+            rupture probable avant la fin de saison
+        </span>
     </div>
 </div>
 
@@ -176,7 +179,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                             <th>Famille</th>
                             <th class="num">Stock</th>
                             <th class="num">Vendus</th>
-                            <th class="num">Couverture</th>
+                            <th class="num">Mois de stock</th>
                             <th class="num">Valeur</th>
                         </tr>
                     </thead>
@@ -215,6 +218,13 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
         </span>
     </div>
 
+    <p class="legend muted text-sm">
+        <strong>Mois de stock</strong> : combien de temps le stock actuel tiendrait au rythme de vente
+        de la période. Au-delà de <?= (int)SEUIL_DORMANT ?> mois la famille <strong>dort</strong> (ne pas
+        recommander, écouler d'abord) ; en dessous de <?= (int)SEUIL_TENSION ?> mois elle est
+        <strong>bientôt épuisée</strong> (risque de rupture avant la fin de saison).
+    </p>
+
     <div class="table-wrap">
         <table class="table">
             <thead>
@@ -225,7 +235,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                     <th class="num">En stock</th>
                     <th class="num">Millésimes anciens</th>
                     <th class="num">Valeur stock</th>
-                    <th class="num">Couverture</th>
+                    <th class="num">Mois de stock</th>
                     <th>Verdict</th>
                 </tr>
             </thead>
@@ -239,13 +249,13 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                     }
 
                     if ($inStock === 0) {
-                        $verdict = ['tag-danger', 'rupture'];
+                        $verdict = ['tag-danger', 'épuisé'];
                     } elseif ($coverage === null) {
                         $verdict = ['tag-danger', 'ne se vend pas'];
                     } elseif ($coverage > SEUIL_DORMANT) {
                         $verdict = ['tag-warn', 'dort'];
                     } elseif ($coverage < SEUIL_TENSION) {
-                        $verdict = ['tag-warn', 'tendu'];
+                        $verdict = ['tag-warn', 'bientôt épuisé'];
                     } else {
                         $verdict = ['tag-ok', 'sain'];
                     }

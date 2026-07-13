@@ -254,13 +254,13 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                                 <div class="row-actions">
                                     <?php if ($bike['status'] !== 'vendu'): ?>
                                         <button type="button"
-                                                class="btn-icon js-modal"
+                                                class="btn btn-sell js-modal"
                                                 data-modal="modal-sell"
                                                 data-bike-id="<?= (int)$bike['id'] ?>"
                                                 data-bike-label="<?= e($label . ' · ' . ($bike['size'] ?? '')) ?>"
                                                 data-sold-price="<?= e((string)($bike['list_price'] ?? '')) ?>"
-                                                title="Marquer vendu">
-                                            <i class="fa-solid fa-tag"></i>
+                                                title="Marquer ce vélo vendu, daté d'aujourd'hui">
+                                            <i class="fa-solid fa-tag"></i> Vendu
                                         </button>
                                     <?php endif; ?>
 

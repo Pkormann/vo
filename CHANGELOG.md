@@ -3,6 +3,18 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.4.1 — 2026-07-13
+
+Vocabulaire et geste de vente.
+
+- **« Famille en tension » disparaît.** Personne ne sait ce que ça veut dire. On lit désormais
+  « bientôt épuisée », la colonne « Couverture » devient « Mois de stock », et le verdict
+  « tendu » devient « bientôt épuisé » / « rupture » devient « épuisé ».
+- Une légende sous le tableau de rotation explique en une phrase ce que « mois de stock »
+  mesure, et ce que valent les deux seuils.
+- `stock.php` : le bouton de vente porte enfin son nom — **« Vendu »** sur la ligne du vélo,
+  au lieu d'une icône muette que personne ne remarquait.
+
 ## 0.4.0 — 2026-07-13
 
 Enregistrer une vente depuis la page Ventes.

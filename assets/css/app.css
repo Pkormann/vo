@@ -42,6 +42,27 @@
 
 .sale-bar p { margin: .15rem 0 0; }
 
+/* Le geste de vente est sur la ligne du vélo : c'est là qu'on le cherche, et
+   une icône muette ne se voit pas. Bouton compact, mais avec son mot. */
+.btn-sell {
+    padding: .3rem .6rem;
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+.row-actions { align-items: center; }
+
+/* --- Légende d'un tableau ------------------------------------------------- */
+
+.legend {
+    margin: 0 0 1rem;
+    padding: .6rem .8rem;
+    border-left: 3px solid var(--line);
+    background: var(--surface-alt);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    line-height: 1.5;
+}
+
 /* --- États ---------------------------------------------------------------- */
 
 .tag {
