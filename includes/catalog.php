@@ -180,6 +180,60 @@ function modelId(string $brand, string $name, ?int $year, string $category, ?flo
 }
 
 /**
+ * Marque un exemplaire vendu. Le geste le plus fréquent du magasin, donc le seul
+ * endroit où il est écrit : stock.php et ventes.php appellent tous deux ceci.
+ *
+ * Le prix de vente laissé vide n'est pas une erreur : il signifie « au prix
+ * catalogue », et les lectures retombent sur `list_price`. On ne recopie donc
+ * pas le catalogue dans `sold_price`, sinon on ne saurait plus distinguer un
+ * prix réellement négocié d'un prix jamais saisi.
+ *
+ * @return bool false si l'identifiant ne correspond à aucun vélo à vendre.
+ */
+function sellBike(int $bikeId, string $soldAt, ?float $soldPrice, ?string $customerName): bool
+{
+    if ($bikeId <= 0) {
+        return false;
+    }
+
+    $customer = customerId($customerName);
+    $date     = normalizeSaleDate($soldAt);
+
+    $stmt = db()->prepare(
+        'UPDATE ' . tbl('bikes') . '
+         SET status = "vendu", sold_at = ?, sold_price = ?, customer_id = ?
+         WHERE id = ? AND status <> "vendu"'
+    );
+    $stmt->bind_param('sdii', $date, $soldPrice, $customer, $bikeId);
+    $stmt->execute();
+    $touched = $stmt->affected_rows;
+    $stmt->close();
+
+    return $touched > 0;
+}
+
+/** Date de vente valide : aujourd'hui par défaut, jamais dans le futur. */
+function normalizeSaleDate(string $value): string
+{
+    $ts = strtotime($value);
+
+    if ($value === '' || $ts === false) {
+        return date('Y-m-d');
+    }
+
+    return date('Y-m-d', min($ts, time()));
+}
+
+/** Vélos encore en rayon, prêts à être vendus. Groupés par catégorie pour la saisie. */
+function sellableBikes(): array
+{
+    $sql = bikeSelect() . ' WHERE b.status IN ("stock","reserve","test")
+                            ORDER BY m.category, br.name, m.name, b.size';
+
+    return db()->query($sql)->fetch_all(MYSQLI_ASSOC);
+}
+
+/**
  * Coût d'achat d'un exemplaire : le prix réel s'il est connu, sinon une
  * estimation à partir du rabais fournisseur de la marque. Renvoie null quand
  * ni l'un ni l'autre n'est disponible — on ne devine pas.

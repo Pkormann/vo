@@ -1,6 +1,8 @@
-/* Pages métier : stock, ventes, rapport, pré-commande, marques. */
+/* Pages métier : stock, ventes, rapport, pré-commande, marques.
+   Le socle (cartes, tables, KPI, boutons) vit dans base.css : ici, seulement ce
+   qui est propre au domaine. */
 
-/* --- Barre de filtres ------------------------------------------------------ */
+/* --- Barres de filtres ---------------------------------------------------- */
 
 .filters {
     display: flex;
@@ -9,43 +11,58 @@
     align-items: flex-end;
 }
 
-.filters .field { margin: 0; min-width: 8rem; flex: 1 1 8rem; }
+.filters .field { margin-bottom: 0; min-width: 8rem; flex: 1 1 8rem; }
 .filters .field-actions { display: flex; gap: .4rem; flex: 0 0 auto; }
 
-/* Le sélecteur de période chapeaute les autres filtres : il est séparé par un
-   trait, pour qu'on lise « quelle période » puis « quoi dedans ». */
+/* Le sélecteur de période chapeaute les autres filtres : un trait sépare
+   « quelle période » de « quoi chercher dedans ». */
 .period-filter {
-    padding-bottom: .9rem;
-    margin-bottom: .9rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
     border-bottom: 1px solid var(--line);
 }
 
+/* Le récapitulatif passe seul à la ligne : c'est une phrase, pas un champ. */
 .period-summary {
     flex: 1 1 100%;
-    margin: .25rem 0 0;
+    margin: 0;
 }
 
-/* --- Étiquettes d'état ----------------------------------------------------- */
+/* --- Barre d'action de vente ---------------------------------------------- */
+
+/* Le geste le plus fréquent du magasin est en haut de page, pas caché derrière
+   un filtre : « un vélo est parti » doit se régler en deux clics. */
+.sale-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.sale-bar p { margin: .15rem 0 0; }
+
+/* --- États ---------------------------------------------------------------- */
 
 .tag {
     display: inline-block;
-    padding: .12rem .5rem;
-    border-radius: 999px;
-    font-size: .74rem;
-    font-weight: 600;
-    letter-spacing: .01em;
-    white-space: nowrap;
+    padding: .1rem .5rem;
     border: 1px solid var(--line);
-    color: var(--ink-soft);
+    border-radius: 999px;
     background: var(--surface-alt);
+    color: var(--ink-soft);
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-/* Le stock est neutre ; seul ce qui demande une décision porte une couleur. */
-.tag-stock   { color: var(--ink); }
+/* Les statuts restent en gris : ce sont des faits, pas des alertes. */
+.tag-stock   { color: var(--ink); border-color: var(--ink); background: var(--surface); }
 .tag-reserve { border-style: dashed; }
 .tag-test    { font-style: italic; }
-.tag-vendu   { color: var(--ink-soft); opacity: .75; }
+.tag-vendu   { opacity: .7; }
 
+/* La couleur est réservée à ce qui appelle une décision. */
 .tag-ok     { border-color: var(--ok);   color: var(--ok);   background: var(--ok-soft); }
 .tag-warn   { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
 .tag-danger { border-color: var(--ko);   color: var(--ko);   background: var(--ko-soft); }
@@ -53,36 +70,30 @@
 /* Un vélo qui traîne depuis plus d'un an n'est plus du stock, c'est un problème. */
 .age-stale { color: var(--ko); font-weight: 600; }
 
-/* --- Colonnes numériques --------------------------------------------------- */
-
-.table .num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-/* --- Tuiles de tête -------------------------------------------------------- */
-
 .kpi-note {
     display: block;
-    margin-top: .15rem;
+    margin-top: auto;      /* colle la note en bas : les tuiles restent alignées */
+    padding-top: .35rem;
     font-size: .75rem;
-    color: var(--ink-soft);
+    line-height: 1.35;
+    color: var(--muted);
 }
 
-.kpi-alert .kpi-value { color: var(--ko); }
+.kpi-alert .kpi-value  { color: var(--ko); }
+.kpi-value.is-up       { color: var(--ok); }
+.kpi-value.is-down     { color: var(--ko); }
 
-.kpi-value.is-up   { color: var(--ok); }
-.kpi-value.is-down { color: var(--ko); }
+/* --- Fiche vélo ----------------------------------------------------------- */
 
-/* --- Fiche vélo ------------------------------------------------------------ */
-
-.form-bike .grid-2 { gap: .75rem 1.25rem; }
+/* La grille porte déjà l'espacement : la marge des champs ferait double emploi. */
+.form-bike .field { margin-bottom: 0; }
+.form-bike .grid-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem 1.25rem; }
 
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: .5rem;
-    margin-top: 1.25rem;
+    margin-top: 1.5rem;
 }
 
 .danger-zone {
@@ -90,42 +101,53 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    border-color: var(--ko-soft);
+    flex-wrap: wrap;
+    border-color: var(--ko-line);
 }
 
-/* --- Pré-commande ---------------------------------------------------------- */
+.danger-zone p { margin: .15rem 0 0; }
+
+/* --- Pré-commande --------------------------------------------------------- */
+
+.method p { margin: 0 0 .6rem; }
+.method p:last-child { margin-bottom: 0; }
 
 .method .formula {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: .85rem;
-    padding: .6rem .8rem;
+    padding: .65rem .85rem;
     border-left: 3px solid var(--ink);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     background: var(--surface-alt);
-    border-radius: var(--radius-sm);
+    font-family: var(--mono);
+    font-size: .82rem;
 }
 
 .input-qty {
-    width: 5rem;
+    width: 4.5rem;
+    padding: .35rem .5rem;
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
-
-.table-preorder tbody tr:hover { background: var(--surface-alt); }
 
 .sizes { display: flex; flex-wrap: wrap; gap: .25rem; }
 
 .size-chip {
     display: inline-flex;
     gap: .3rem;
-    padding: .1rem .45rem;
+    padding: .05rem .4rem;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    font-size: .75rem;
-    color: var(--ink-soft);
+    font-size: .74rem;
+    color: var(--muted);
+    white-space: nowrap;
 }
 
-.size-chip b { color: var(--ink); }
+.size-chip b { color: var(--ink); font-weight: 600; }
 
-/* --- Graphiques ------------------------------------------------------------ */
+/* --- Petits écrans -------------------------------------------------------- */
 
-canvas { max-width: 100%; }
+@media (max-width: 720px) {
+    .filters .field { flex: 1 1 100%; }
+    .filters .field-actions { width: 100%; }
+    .filters .field-actions .btn { flex: 1; }
+    .danger-zone { align-items: flex-start; }
+}

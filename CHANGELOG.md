@@ -3,6 +3,39 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.4.0 — 2026-07-13
+
+Enregistrer une vente depuis la page Ventes.
+
+- `ventes.php` : bouton « Enregistrer une vente » en tête de page — on choisit le vélo
+  parmi ceux en rayon (groupés par catégorie), la **date du jour est déjà remplie**, le
+  client s'autocomplète. Deux clics, sans passer par l'écran du stock.
+- `sellBike()` : la vente devient une opération unique dans `includes/catalog.php`.
+  `stock.php` et `ventes.php` l'appellent tous les deux au lieu d'en avoir chacun sa copie.
+- Un vélo déjà vendu ne peut plus l'être une seconde fois (`WHERE status <> "vendu"`),
+  et une date de vente dans le futur est ramenée au jour même.
+- Un prix de vente laissé vide continue de signifier « au prix catalogue » : on ne recopie
+  pas le catalogue dans `sold_price`, sinon un prix négocié ne se distinguerait plus d'un
+  prix jamais saisi. Le catalogue s'affiche en repère dans le champ.
+
+## 0.3.1 — 2026-07-13
+
+Mise au propre du CSS, maintenant qu'il y a du contenu à habiller.
+
+- **Chevauchements corrigés** : rien n'espaçait les blocs de premier niveau. Seul
+  `.card + .card` portait une marge, donc deux `.grid` consécutives — ou une `.grid`
+  suivie d'une `.card` — se touchaient. `.page > * + *` donne le rythme vertical.
+- **Graphiques** : les canvas n'avaient pas de conteneur dimensionné. Chart.js tourne en
+  `maintainAspectRatio: false` et ignore l'attribut `height` : sans parent à hauteur fixe,
+  le graphique s'effondre ou grandit sans fin.
+- **Cohérence** : `.chart` était défini deux fois, dans `admin.css` (240px) et `app.css`
+  (260px), tous deux chargés ensemble. Une seule définition, dans `base.css`.
+- Cellules à deux niveaux (`.cell-main` / `.cell-sub`) : le détail passe sous le libellé
+  au lieu de s'y coller.
+- Tuiles KPI alignées (hauteur de libellé minimale, note poussée en bas).
+- Plus aucune couleur en dur dans `app.css` : tout passe par les variables du socle.
+- Passage responsive sur les filtres et les zones d'action.
+
 ## 0.3.0 — 2026-07-13
 
 Interrogation par plage de dates.

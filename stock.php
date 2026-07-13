@@ -20,21 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? '');
     $bikeId = (int)($_POST['bike_id'] ?? 0);
 
-    if ($action === 'sell' && $bikeId > 0) {
-        $soldAt    = (string)($_POST['sold_at'] ?? date('Y-m-d'));
-        $soldPrice = $_POST['sold_price'] !== '' ? (float)$_POST['sold_price'] : null;
-        $customer  = customerId((string)($_POST['customer'] ?? ''));
-
-        $stmt = db()->prepare(
-            'UPDATE ' . tbl('bikes') . '
-             SET status = "vendu", sold_at = ?, sold_price = ?, customer_id = ?
-             WHERE id = ?'
+    if ($action === 'sell') {
+        $sold = sellBike(
+            $bikeId,
+            (string)($_POST['sold_at'] ?? ''),
+            ($_POST['sold_price'] ?? '') !== '' ? (float)$_POST['sold_price'] : null,
+            (string)($_POST['customer'] ?? '')
         );
-        $stmt->bind_param('sdii', $soldAt, $soldPrice, $customer, $bikeId);
-        $stmt->execute();
-        $stmt->close();
 
-        $notice = 'Vélo marqué vendu.';
+        $notice = $sold ? 'Vélo marqué vendu.' : 'Ce vélo était déjà vendu.';
     }
 
     if ($action === 'delete' && $bikeId > 0) {
@@ -240,9 +234,9 @@ renderHeader('Stock', ['css' => ['admin', 'app'], 'icons' => true]);
                         <tr>
                             <td class="muted text-sm"><?= e($bike['category']) ?></td>
                             <td>
-                                <strong><?= e($label) ?></strong>
+                                <span class="cell-main"><?= e($label) ?></span>
                                 <?php if ($bike['color']): ?>
-                                    <span class="muted text-sm"><?= e($bike['color']) ?></span>
+                                    <span class="cell-sub"><?= e($bike['color']) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td><?= e($bike['size'] ?? '—') ?></td>

@@ -15,6 +15,27 @@ require_once __DIR__ . '/includes/layout.php';
 checkAuth();
 checkRole(['owner', 'admin']);
 
+$notice = '';
+
+// Enregistrer une vente depuis cette page : c'est le geste le plus fréquent du
+// magasin, il ne doit pas obliger à passer par l'écran du stock.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
+
+    if (($_POST['action'] ?? '') === 'sell') {
+        $sold = sellBike(
+            (int)($_POST['bike_id'] ?? 0),
+            (string)($_POST['sold_at'] ?? ''),
+            ($_POST['sold_price'] ?? '') !== '' ? (float)$_POST['sold_price'] : null,
+            (string)($_POST['customer'] ?? '')
+        );
+
+        $notice = $sold
+            ? 'Vente enregistrée.'
+            : 'Vélo introuvable ou déjà vendu.';
+    }
+}
+
 $period  = currentPeriod();
 $fCat    = (string)($_GET['cat'] ?? '');
 $fBrand  = (string)($_GET['brand'] ?? '');
@@ -66,10 +87,30 @@ foreach ($sales as $sale) {
     $revenue += (float)($sale['sold_price'] ?? $sale['list_price'] ?? 0);
 }
 
-$brands = db()->query('SELECT name FROM ' . tbl('brands') . ' ORDER BY name')->fetch_all(MYSQLI_ASSOC);
+$brands    = db()->query('SELECT name FROM ' . tbl('brands') . ' ORDER BY name')->fetch_all(MYSQLI_ASSOC);
+$customers = db()->query('SELECT name FROM ' . tbl('customers') . ' ORDER BY name LIMIT 2000')->fetch_all(MYSQLI_ASSOC);
+$inStock   = sellableBikes();
 
 renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
 ?>
+
+<?php if ($notice !== ''): ?>
+    <div class="alert alert-success"><?= e($notice) ?></div>
+<?php endif; ?>
+
+<div class="card sale-bar">
+    <div>
+        <strong>Un vélo vient de partir ?</strong>
+        <p class="muted text-sm">
+            Enregistre la vente sans passer par le stock. La date du jour est déjà remplie.
+        </p>
+    </div>
+
+    <button type="button" class="btn js-modal" data-modal="modal-sale"
+            <?= $inStock ? '' : 'disabled' ?>>
+        <i class="fa-solid fa-tag"></i> Enregistrer une vente
+    </button>
+</div>
 
 <div class="grid grid-4">
     <div class="kpi">
@@ -201,4 +242,81 @@ renderHeader('Ventes', ['css' => ['admin', 'app'], 'icons' => true]);
     <?php endif; ?>
 </div>
 
-<?php renderFooter(['scripts' => [url('assets/js/period.js') . '?v=' . APP_VERSION]]); ?>
+<div class="modal" id="modal-sale">
+    <div class="modal-box">
+        <h2 class="modal-title">Enregistrer une vente</h2>
+
+        <?php if (!$inStock): ?>
+            <p class="empty">Aucun vélo en rayon. Ajoute-le d'abord au stock.</p>
+        <?php else: ?>
+            <form method="post">
+                <?= csrfField() ?>
+                <input type="hidden" name="action" value="sell">
+
+                <div class="field">
+                    <label class="label" for="bike_id">Vélo vendu</label>
+                    <select class="input js-bike-select" id="bike_id" name="bike_id" required>
+                        <option value="">— choisir —</option>
+                        <?php
+                        $currentCategory = null;
+                        foreach ($inStock as $bike):
+                            if ($bike['category'] !== $currentCategory):
+                                if ($currentCategory !== null): ?>
+                                    </optgroup>
+                                <?php endif;
+                                $currentCategory = $bike['category']; ?>
+                                <optgroup label="<?= e($currentCategory) ?>">
+                            <?php endif; ?>
+
+                            <option value="<?= (int)$bike['id'] ?>"
+                                    data-price="<?= e((string)($bike['list_price'] ?? '')) ?>">
+                                <?= e($bike['brand'] . ' ' . $bike['model_name']) ?>
+                                <?= $bike['size'] ? '· ' . e($bike['size']) : '' ?>
+                                <?= $bike['model_year'] ? '· MY' . e((string)$bike['model_year']) : '' ?>
+                                <?= $bike['status'] !== 'stock' ? '(' . e(STATUSES[$bike['status']]) . ')' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="label" for="sale_date">Date de vente</label>
+                    <input class="input" type="date" id="sale_date" name="sold_at"
+                           value="<?= e(date('Y-m-d')) ?>" max="<?= e(date('Y-m-d')) ?>" required>
+                </div>
+
+                <div class="field">
+                    <label class="label" for="sale_customer">Client</label>
+                    <input class="input" type="text" id="sale_customer" name="customer"
+                           list="customer-list" placeholder="Nom, prénom" autocomplete="off">
+                    <datalist id="customer-list">
+                        <?php foreach ($customers as $customer): ?>
+                            <option value="<?= e($customer['name']) ?>"></option>
+                        <?php endforeach; ?>
+                    </datalist>
+                </div>
+
+                <div class="field">
+                    <label class="label" for="sale_price">
+                        Prix de vente (CHF)
+                        <span class="muted text-sm">— vide : prix catalogue</span>
+                    </label>
+                    <input class="input js-sale-price" type="number" step="1" id="sale_price"
+                           name="sold_price" placeholder="prix catalogue">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost js-close">Annuler</button>
+                    <button type="submit" class="btn">Enregistrer la vente</button>
+                </div>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php renderFooter(['scripts' => [
+    url('assets/js/period.js') . '?v=' . APP_VERSION,
+    url('assets/js/modal.js')  . '?v=' . APP_VERSION,
+    url('assets/js/vente.js')  . '?v=' . APP_VERSION,
+]]); ?>

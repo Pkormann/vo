@@ -139,7 +139,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
             <h2>Ventes par catégorie</h2>
             <span class="muted text-sm"><?= e($period['label']) ?></span>
         </div>
-        <canvas id="chart-categories" height="220"></canvas>
+        <div class="chart"><canvas id="chart-categories"></canvas></div>
     </div>
 
     <div class="card">
@@ -147,7 +147,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
             <h2>Saisonnalité</h2>
             <span class="muted text-sm">années pleines</span>
         </div>
-        <canvas id="chart-months" height="220"></canvas>
+        <div class="chart"><canvas id="chart-months"></canvas></div>
     </div>
 </div>
 
@@ -157,7 +157,7 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
             <h2>Où dort la valeur du stock</h2>
             <span class="muted text-sm">photo d'aujourd'hui</span>
         </div>
-        <canvas id="chart-stock" height="220"></canvas>
+        <div class="chart"><canvas id="chart-stock"></canvas></div>
     </div>
 
     <div class="card">
@@ -184,8 +184,8 @@ renderHeader('Rapport', ['css' => ['admin', 'app'], 'icons' => true]);
                         <?php foreach ($dormant as $row): ?>
                             <tr>
                                 <td>
-                                    <strong><?= e($row['family']) ?></strong>
-                                    <span class="muted text-sm"><?= e($row['category']) ?></span>
+                                    <span class="cell-main"><?= e($row['family']) ?></span>
+                                    <span class="cell-sub"><?= e($row['category']) ?></span>
                                 </td>
                                 <td class="num"><?= (int)$row['in_stock'] ?></td>
                                 <td class="num"><?= (int)$row['sold'] ?></td>

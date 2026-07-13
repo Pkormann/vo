@@ -77,13 +77,6 @@
 .period-switch a:hover { background: var(--surface-alt); color: var(--ink); text-decoration: none; }
 .period-switch a.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
-.chart { position: relative; height: 240px; }
-.chart-tall { height: 300px; }
-
-/* Le <script type="application/json"> ne doit jamais s'afficher. */
-#stats-data { display: none; }
-
 @media (max-width: 720px) {
     .table .ua { max-width: 140px; }
-    .card-header { flex-wrap: wrap; gap: .5rem; }
 }

@@ -13,7 +13,7 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 ```
 config/      version.php · install.php (token) · db.php · auth.php · secrets.php (serveur only) · .htaccess (deny all)
 includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
-assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period}.js
+assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente}.js
 admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
 install/     setup.php · db.php · set_owner.php               (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
@@ -186,6 +186,19 @@ le stock reporté.
 `splitBySize()` éclate une quantité en tailles selon le mix de ventes observé, par la **méthode du plus
 grand reste** : donner le reliquat d'arrondi à la taille la plus vendue gonflerait la taille dominante à
 chaque commande et affamerait les tailles rares.
+
+## Vendre un vélo
+
+`sellBike()` (dans `includes/catalog.php`) est **le seul endroit** où une vente s'écrit.
+`stock.php` (bouton sur la ligne du vélo) et `ventes.php` (bouton « Enregistrer une vente »,
+avec la date du jour pré-remplie) l'appellent tous les deux.
+
+- Un vélo déjà vendu ne peut pas l'être deux fois : la clause `WHERE status <> "vendu"` le garantit,
+  et la fonction renvoie `false` plutôt que de mentir sur le succès.
+- Une date de vente dans le futur est ramenée au jour même (`normalizeSaleDate()`).
+- **Un `sold_price` vide signifie « au prix catalogue »**, et les lectures retombent sur `list_price`.
+  On ne recopie jamais le catalogue dans `sold_price` : sinon un prix réellement négocié ne se
+  distinguerait plus d'un prix jamais saisi.
 
 ## Import des données (`admin/import.php`, rôle owner)
 

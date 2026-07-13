@@ -18,6 +18,7 @@
     --ok-soft:      #e6f4ec;
     --ko:           #c53030;
     --ko-soft:      #fdeaea;
+    --ko-line:      #f0cfcf;
     --warn:         #b7791f;
     --warn-soft:    #fdf3e2;
 
@@ -144,8 +145,24 @@ h2 { font-size: 1.05rem; }
     padding: 1.25rem;
 }
 
+/* Rythme vertical de la page : tout bloc de premier niveau est décollé du
+   précédent. Sans cette règle, deux .grid consécutives — ou une .grid suivie
+   d'une .card — se touchent, car seul .card + .card portait une marge. */
+.page > * + * { margin-top: var(--gap); }
+
 .card + .card { margin-top: var(--gap); }
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+
+.card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+/* Le titre porte déjà la marge du h2 : dans un en-tête, elle décale tout. */
+.card-header h2 { margin-bottom: 0; }
 
 .grid { display: grid; gap: var(--gap); }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
@@ -154,13 +171,19 @@ h2 { font-size: 1.05rem; }
 /* --- KPI ------------------------------------------------------------------ */
 
 .kpi {
+    display: flex;
+    flex-direction: column;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 1rem 1.15rem;
 }
 
+/* Les libellés tiennent sur une ou deux lignes selon la tuile : sans hauteur
+   minimale, les grands chiffres ne s'alignent plus d'une tuile à l'autre. */
 .kpi-label {
+    display: block;
+    min-height: 2.1em;
     color: var(--muted);
     font-size: .72rem;
     font-weight: 600;
@@ -168,7 +191,7 @@ h2 { font-size: 1.05rem; }
     letter-spacing: .06em;
 }
 
-.kpi-value { font-size: 1.85rem; font-weight: 650; line-height: 1.2; margin-top: .3rem; }
+.kpi-value { font-size: 1.85rem; font-weight: 650; line-height: 1.2; margin-top: .1rem; }
 .kpi-value.is-ok { color: var(--ok); }
 .kpi-value.is-ko { color: var(--ko); }
 .kpi-value.is-warn { color: var(--warn); }
@@ -263,7 +286,7 @@ h2 { font-size: 1.05rem; }
     margin-bottom: 1rem;
 }
 
-.alert-error   { background: var(--ko-soft);   border-color: #f5c6c6; color: #8f2323; }
+.alert-error   { background: var(--ko-soft);   border-color: var(--ko-line); color: #8f2323; }
 .alert-success { background: var(--ok-soft);   border-color: #bfe3ce; color: #22613f; }
 .alert-warn    { background: var(--warn-soft); border-color: #f0d9a8; color: #8a5c12; }
 
@@ -316,10 +339,30 @@ h2 { font-size: 1.05rem; }
 .table tbody tr:hover { background: var(--surface-alt); }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .table .mono { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); }
+
+/* Une cellule qui porte une information principale et son détail : le détail
+   passe dessous, il ne se colle pas au titre sur la même ligne. */
+.cell-main { display: block; font-weight: 600; }
+.cell-sub  { display: block; font-size: .78rem; color: var(--muted); line-height: 1.35; }
 .table tr.is-suspect { background: var(--ko-soft); }
 .table tr.is-suspect:hover { background: #fbdcdc; }
 
 .empty { padding: 2rem; text-align: center; color: var(--muted); font-size: .9rem; }
+
+/* --- Graphiques ----------------------------------------------------------- */
+
+/* Chart.js tourne en `maintainAspectRatio: false` : il ignore l'attribut height
+   du canvas et se cale sur son parent. Sans parent dimensionné, le graphique
+   s'effondre ou grandit sans fin. Ce conteneur est donc la seule source de
+   hauteur — et la seule définition de .chart du projet. */
+.chart { position: relative; height: 240px; }
+.chart-tall { height: 300px; }
+
+.chart canvas { position: absolute; inset: 0; max-width: 100%; }
+
+/* Les données passées à Chart.js voyagent dans un <script type="application/json"> :
+   il ne doit jamais s'afficher, quel que soit son id. */
+script[type="application/json"] { display: none; }
 
 /* --- Modales -------------------------------------------------------------- */
 
