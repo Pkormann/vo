@@ -228,10 +228,23 @@ Le prompt est **éditable depuis la page** et persiste dans `vo_settings` (clé 
 Une valeur vide supprime la ligne : le défaut du code reprend la main. `config/prompt.php` reste
 donc toujours la référence restaurable.
 
-### `vo_settings`
+### `vo_settings` et `vo_settings_history`
 
-`name` (VARCHAR(60) PK) · `value` (MEDIUMTEXT) · `updated_at`. Réglages éditables depuis l'app.
-Le défaut n'est jamais recopié en base à l'installation : l'absence de ligne signifie « le code fait foi ».
+`vo_settings` : `name` (VARCHAR(60) PK) · `value` (MEDIUMTEXT) · `updated_at`. Réglages éditables
+depuis l'app. Le défaut n'est jamais recopié en base à l'installation : **l'absence de ligne signifie
+« le code fait foi »**.
+
+`vo_settings_history` : `id` · `name` · `value` · `author` · `created_at`. Chaque appel à
+`saveSetting()` **archive d'abord** la valeur qu'il remplace, puis écrit. L'ordre n'est pas anodin :
+il garantit qu'un écrasement accidentel (tout effacer, enregistrer) laisse la version précédente
+derrière lui. Réenregistrer un texte identique ne crée pas de version.
+
+Conséquences, voulues :
+
+- Restaurer une ancienne version archive la version courante — l'opération est donc réversible.
+- « Restaurer l'original » l'est aussi : la version en cours part à l'historique avant d'être écartée.
+- **Aucune action de `export.php` n'est destructrice.** Le pire scénario coûte un clic pour revenir.
+- L'historique est plafonné à 30 versions par réglage (`pruneSettingHistory()`).
 
 ## Filtrage des tableaux (`assets/js/filtre.js`)
 

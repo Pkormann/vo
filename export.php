@@ -28,17 +28,36 @@ $notice   = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
 
-    if (($_POST['action'] ?? '') === 'reset') {
-        saveSetting('prompt_analyse', '');
-        $notice = 'Prompt réinitialisé : le texte livré avec l\'application fait de nouveau foi.';
-    } elseif (($_POST['action'] ?? '') === 'save') {
-        saveSetting('prompt_analyse', (string)($_POST['prompt'] ?? ''));
-        $notice = 'Prompt enregistré.';
+    $action = (string)($_POST['action'] ?? '');
+    $author = currentUser();
+
+    if ($action === 'reset') {
+        // La version en cours est archivée avant d'être écartée : « restaurer
+        // l'original » reste donc lui-même réversible.
+        saveSetting('prompt_analyse', '', $author);
+        $notice = 'Prompt d\'origine restauré. La version précédente est conservée dans l\'historique.';
+
+    } elseif ($action === 'save') {
+        $changed = saveSetting('prompt_analyse', (string)($_POST['prompt'] ?? ''), $author);
+        $notice  = $changed
+            ? 'Prompt enregistré. La version précédente est conservée dans l\'historique.'
+            : 'Aucune modification à enregistrer.';
+
+    } elseif ($action === 'restore') {
+        $version = settingVersion((int)($_POST['version_id'] ?? 0));
+
+        if ($version === null) {
+            $notice = 'Cette version n\'existe plus.';
+        } else {
+            saveSetting('prompt_analyse', $version, $author);
+            $notice = 'Version restaurée.';
+        }
     }
 }
 
 $prompt   = setting('prompt_analyse', PROMPT_ANALYSE);
 $isCustom = $prompt !== PROMPT_ANALYSE;
+$history  = settingHistory('prompt_analyse');
 
 // --- Téléchargement -------------------------------------------------------
 $wanted = (string)($_GET['dl'] ?? '');
@@ -175,16 +194,86 @@ renderHeader('Export et analyse', ['css' => ['admin', 'app'], 'icons' => true]);
 
         <textarea class="input prompt-box" id="prompt-text" name="prompt" rows="22"><?= e($prompt) ?></textarea>
 
-        <?php if ($isCustom): ?>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-ghost" name="action" value="reset"
-                        onclick="return confirm('Revenir au prompt livré avec l\'application ? Tes modifications seront perdues.');">
-                    <i class="fa-solid fa-rotate-left"></i> Restaurer le prompt d'origine
-                </button>
-            </div>
-        <?php endif; ?>
+        <p class="muted text-sm">
+            Édite sans crainte : chaque enregistrement archive la version qu'il remplace, et le
+            texte d'origine vit dans le code — il ne peut pas être perdu.
+        </p>
     </div>
 </form>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Historique du prompt</h2>
+        <span class="muted text-sm"><?= count($history) ?> version<?= count($history) > 1 ? 's' : '' ?> archivée<?= count($history) > 1 ? 's' : '' ?></span>
+    </div>
+
+    <div class="table-wrap">
+        <table class="table">
+            <tbody>
+                <tr class="row-primary">
+                    <td>
+                        <span class="cell-main">
+                            Version d'origine
+                            <?= $isCustom ? '' : '<span class="tag tag-stock">en cours</span>' ?>
+                        </span>
+                        <span class="cell-sub">
+                            Le texte livré avec l'application. Il vit dans le dépôt : il est
+                            toujours restaurable, quoi qu'il arrive à la base.
+                        </span>
+                    </td>
+                    <td class="num">
+                        <?php if ($isCustom): ?>
+                            <form method="post" class="inline-form"
+                                  onsubmit="return confirm('Revenir au prompt d\'origine ? La version actuelle sera archivée, tu pourras y revenir.');">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="reset">
+                                <button type="submit" class="btn btn-ghost btn-sell">
+                                    <i class="fa-solid fa-rotate-left"></i> Restaurer
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <span class="muted text-sm">actif</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+
+                <?php foreach ($history as $version): ?>
+                    <tr>
+                        <td>
+                            <span class="cell-main">
+                                <?= e(fmtDate($version['created_at'], 'd.m.Y à H:i')) ?>
+                                <?php if ($version['author']): ?>
+                                    <span class="muted">— <?= e($version['author']) ?></span>
+                                <?php endif; ?>
+                            </span>
+                            <details class="details">
+                                <summary>Voir ce texte (<?= number_format(mb_strlen($version['value']), 0, '.', "'") ?> caractères)</summary>
+                                <pre class="version-preview"><?= e($version['value']) ?></pre>
+                            </details>
+                        </td>
+                        <td class="num">
+                            <form method="post" class="inline-form"
+                                  onsubmit="return confirm('Restaurer cette version ? La version actuelle sera archivée.');">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="restore">
+                                <input type="hidden" name="version_id" value="<?= (int)$version['id'] ?>">
+                                <button type="submit" class="btn btn-ghost btn-sell">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> Restaurer
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php if (!$history): ?>
+        <p class="muted text-sm">
+            Aucune version archivée pour l'instant : le prompt n'a jamais été modifié.
+        </p>
+    <?php endif; ?>
+</div>
 
 <?php renderFooter(['scripts' => [
     url('assets/js/period.js') . '?v=' . APP_VERSION,

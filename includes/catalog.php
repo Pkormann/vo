@@ -594,16 +594,53 @@ function setting(string $name, string $default = ''): string
     return $row['value'] ?? $default;
 }
 
-/** Enregistre un réglage. Une valeur vide le supprime : le défaut du code reprend la main. */
-function saveSetting(string $name, string $value): void
+/**
+ * Enregistre un réglage, en archivant d'abord la version qu'il remplace.
+ *
+ * L'archivage précède l'écriture : même une bêtise (tout sélectionner, tout
+ * effacer, enregistrer) laisse derrière elle la version d'avant. Une valeur vide
+ * supprime le réglage — le défaut du code reprend alors la main, et lui n'est
+ * jamais perdu puisqu'il vit dans le dépôt.
+ *
+ * @return bool true si quelque chose a changé (rien n'est archivé pour rien).
+ */
+function saveSetting(string $name, string $value, ?string $author = null): bool
 {
+    $current = null;
+
+    $stmt = db()->prepare('SELECT value FROM ' . tbl('settings') . ' WHERE name = ? LIMIT 1');
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($row) {
+        $current = $row['value'];
+    }
+
+    // Réenregistrer un texte identique ne crée pas une version de plus.
+    if ($current === $value) {
+        return false;
+    }
+
+    if ($current !== null) {
+        $stmt = db()->prepare(
+            'INSERT INTO ' . tbl('settings_history') . ' (name, value, author) VALUES (?, ?, ?)'
+        );
+        $stmt->bind_param('sss', $name, $current, $author);
+        $stmt->execute();
+        $stmt->close();
+
+        pruneSettingHistory($name);
+    }
+
     if (trim($value) === '') {
         $stmt = db()->prepare('DELETE FROM ' . tbl('settings') . ' WHERE name = ?');
         $stmt->bind_param('s', $name);
         $stmt->execute();
         $stmt->close();
 
-        return;
+        return true;
     }
 
     $stmt = db()->prepare(
@@ -613,6 +650,58 @@ function saveSetting(string $name, string $value): void
     $stmt->bind_param('ss', $name, $value);
     $stmt->execute();
     $stmt->close();
+
+    return true;
+}
+
+/** Ne garde que les versions récentes : un historique infini n'aide personne. */
+function pruneSettingHistory(string $name, int $keep = 30): void
+{
+    $stmt = db()->prepare(
+        'DELETE h FROM ' . tbl('settings_history') . ' h
+         JOIN (
+            SELECT id FROM ' . tbl('settings_history') . '
+            WHERE name = ?
+            ORDER BY created_at DESC, id DESC
+            LIMIT 18446744073709551615 OFFSET ?
+         ) old ON old.id = h.id'
+    );
+    $stmt->bind_param('si', $name, $keep);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/**
+ * Versions archivées d'un réglage, la plus récente d'abord.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function settingHistory(string $name): array
+{
+    $stmt = db()->prepare(
+        'SELECT id, value, author, created_at
+         FROM ' . tbl('settings_history') . '
+         WHERE name = ?
+         ORDER BY created_at DESC, id DESC'
+    );
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    return $rows;
+}
+
+/** Contenu d'une version archivée, ou null si elle n'existe pas (ou plus). */
+function settingVersion(int $id): ?string
+{
+    $stmt = db()->prepare('SELECT value FROM ' . tbl('settings_history') . ' WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return $row['value'] ?? null;
 }
 
 /**

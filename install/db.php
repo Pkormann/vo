@@ -118,6 +118,18 @@ $schema = [
         updated_at DATETIME    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 
+    // Chaque enregistrement d'un réglage archive la version précédente : on peut
+    // donc toujours revenir en arrière, y compris longtemps après avoir écrasé
+    // un texte par mégarde. Le défaut du code, lui, reste restaurable par nature.
+    tbl('settings_history') => 'CREATE TABLE IF NOT EXISTS ' . tbl('settings_history') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        name       VARCHAR(60)  NOT NULL,
+        value      MEDIUMTEXT   NOT NULL,
+        author     VARCHAR(100) NULL,
+        created_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_name_date (name, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
     // La pré-commande se décide par famille (« combien de Topstone en 2027 ? »),
     // pas par référence catalogue : les modèles MY27 n'existent pas encore quand
     // la décision se prend. Pas de FK vers models, donc, c'est volontaire.

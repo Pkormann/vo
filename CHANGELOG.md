@@ -3,6 +3,20 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.7.0 — 2026-07-13
+
+Le prompt devient versionné : on peut l'éditer sans risque.
+
+- **Historique des versions** (`vo_settings_history`) : chaque enregistrement archive le texte
+  qu'il remplace, daté et signé. On peut relire n'importe quelle version et la restaurer d'un clic.
+- **L'archivage précède l'écriture.** Le scénario qui fait peur — tout sélectionner, tout effacer,
+  enregistrer — laisse malgré tout la version d'avant derrière lui.
+- **« Restaurer l'original » est lui-même réversible** : la version en cours est archivée avant
+  d'être écartée. Aucune action de cette page n'est destructrice.
+- Le texte d'origine vit dans le dépôt (`config/prompt.php`) : il ne peut pas être perdu, même si
+  la base est vidée.
+- L'historique est plafonné aux 30 dernières versions — au-delà, il n'aide plus personne.
+
 ## 0.6.0 — 2026-07-13
 
 Le prompt d'analyse devient un actif, pas un consommable.

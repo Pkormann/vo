@@ -195,6 +195,28 @@
 .details summary:hover { color: var(--ink); }
 .details .period-filter { margin-top: .9rem; border-bottom: 0; padding-bottom: 0; }
 
+/* Historique : l'aperçu d'une version doit rester consultable sans quitter la
+   page, mais ne doit pas la faire défiler sur trois écrans. */
+.version-preview {
+    max-height: 16rem;
+    overflow: auto;
+    margin: .6rem 0 0;
+    padding: .7rem .8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    font-family: var(--mono);
+    font-size: .74rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Un formulaire réduit à son bouton ne doit pas casser l'alignement de la ligne. */
+.inline-form { display: inline; margin: 0; }
+
+.card-header .row-actions { flex-wrap: wrap; gap: .4rem; }
+
 /* --- Petits écrans (iPhone) ----------------------------------------------- */
 
 /* Les colonnes secondaires disparaissent au lieu de forcer un défilement
