@@ -11,15 +11,15 @@ Objectif : analyser les données du magasin (Excel), et outiller le suivi stock 
 ## Arborescence
 
 ```
-config/      version.php · install.php (token) · db.php · auth.php · prompt.php · secrets.php (serveur only) · .htaccess
-includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php (plages de dates)
+config/      version.php · install.php (token) · db.php · auth.php · prompt.php · nouveautes.php · secrets.php · .htaccess
+includes/    helpers.php · layout.php · bruteforce.php · catalog.php (domaine) · period.php · activity.php
 assets/      css/{base,login,admin,app}.css · js/{login,modal,stats,rapport,period,vente,filtre,copie}.js
-admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
+admin/       users.php · audit.php · stats.php · import.php · activite.php   (rôle owner)
 install/     setup.php · db.php · migrate.php · set_owner.php   (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
 stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php
-export.php · doublons.php · inventaire.php
+export.php · doublons.php · inventaire.php · nouveautes.php
 ```
 
 ## Conventions
@@ -206,6 +206,31 @@ le stock reporté.
 `splitBySize()` éclate une quantité en tailles selon le mix de ventes observé, par la **méthode du plus
 grand reste** : donner le reliquat d'arrondi à la taille la plus vendue gonflerait la taille dominante à
 chaque commande et affamerait les tailles rares.
+
+## Journal des actions (`admin/activite.php`, rôle owner)
+
+`vo_activity` journalise les **actions métier** : vente, réservation, ajout/édition/suppression de
+vélo, doublons, import, export, prompt, pré-commande, rabais, inventaire, connexion.
+
+À ne pas confondre avec `vo_login_attempts` / `admin/audit.php`, qui journalisent les **connexions** :
+là c'est de la sécurité (brute force, IP bloquées), ici de l'exploitation (« qui a supprimé ce
+vélo ? »). Les mélanger rendrait les deux illisibles.
+
+`logAction()` **n'est jamais bloquant** : si l'écriture échoue, l'action métier aboutit quand même.
+On ne perd pas une vente parce qu'une ligne de log n'est pas passée. Purge probabiliste au-delà de
+deux ans, sans tâche planifiée.
+
+## Notes de version (`nouveautes.php`, owner + admin)
+
+Le contenu vit dans `config/nouveautes.php`, **écrit pour un utilisateur du magasin**. Ce n'est pas
+un miroir de `CHANGELOG.md` (technique, et jamais déployé puisque le rsync exclut les `*.md`), ni des
+titres de commit : « bind_param cohérents » ne dit rien à un vendeur de vélos. Deux publics, deux
+textes.
+
+**À tenir à jour à chaque livraison**, en même temps que `CHANGELOG.md` et le bump de version.
+
+Le badge « nouveau » s'appuie sur un cookie (`vo_seen_version`) : un réglage par utilisateur en base
+serait plus rigoureux, mais ne vaut pas une colonne pour un confort d'affichage.
 
 ## Inventaire de contrôle (`inventaire.php`)
 

@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -47,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $saved++;
     }
     $stmt->close();
+
+    logAction('precommande', 'saison', $season, $saved . ' ligne(s) enregistrée(s)');
 
     $notice = $saved . ' ligne' . ($saved > 1 ? 's' : '') . ' enregistrée' . ($saved > 1 ? 's' : '') . '.';
 }

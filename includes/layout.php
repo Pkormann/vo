@@ -93,7 +93,9 @@ function navItems(): array
         ['href' => 'export.php',       'label' => 'Export',          'roles' => ['owner', 'admin']],
         ['href' => 'inventaire.php',   'label' => 'Inventaire',      'roles' => ['owner', 'admin']],
         ['href' => 'doublons.php',     'label' => 'Doublons',        'roles' => ['owner', 'admin']],
+        ['href' => 'nouveautes.php',   'label' => 'Nouveautés',      'roles' => ['owner', 'admin']],
         ['href' => 'admin/users.php',  'label' => 'Utilisateurs',    'roles' => ['owner']],
+        ['href' => 'admin/activite.php', 'label' => 'Activité',      'roles' => ['owner']],
         ['href' => 'admin/audit.php',  'label' => 'Audit',           'roles' => ['owner']],
         ['href' => 'admin/stats.php',  'label' => 'Statistiques',    'roles' => ['owner']],
     ];

@@ -91,6 +91,12 @@ renderHeader('Tableau de bord', ['css' => ['admin', 'app'], 'icons' => true]);
             <span class="tool-desc muted">Pointer le rayon contre la base, au téléphone.</span>
         </a>
 
+        <a class="card tool" href="<?= e(url('nouveautes.php')) ?>">
+            <i class="fa-solid fa-gift tool-icon" aria-hidden="true"></i>
+            <span class="tool-name">Nouveautés</span>
+            <span class="tool-desc muted">Ce qui a changé dans l'outil.</span>
+        </a>
+
         <a class="card tool" href="<?= e(url('export.php')) ?>">
             <i class="fa-solid fa-robot tool-icon" aria-hidden="true"></i>
             <span class="tool-name">Export et analyse</span>
@@ -105,6 +111,12 @@ renderHeader('Tableau de bord', ['css' => ['admin', 'app'], 'icons' => true]);
             <i class="fa-solid fa-file-import tool-icon" aria-hidden="true"></i>
             <span class="tool-name">Import CSV</span>
             <span class="tool-desc muted">Reprise des classeurs Excel du magasin.</span>
+        </a>
+
+        <a class="card tool" href="<?= e(url('admin/activite.php')) ?>">
+            <i class="fa-solid fa-list-check tool-icon" aria-hidden="true"></i>
+            <span class="tool-name">Activité</span>
+            <span class="tool-desc muted">Qui a fait quoi : ventes, saisies, exports.</span>
         </a>
 
         <a class="card tool" href="<?= e(url('admin/users.php')) ?>">

@@ -110,6 +110,22 @@ $schema = [
         CONSTRAINT fk_bike_customer FOREIGN KEY (customer_id) REFERENCES ' . tbl('customers') . ' (id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 
+    // Journal des actions métier. Le journal des *connexions* vit à part
+    // (vo_login_attempts) : on ne mélange pas la sécurité et l'exploitation.
+    tbl('activity') => 'CREATE TABLE IF NOT EXISTS ' . tbl('activity') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        username   VARCHAR(100) NULL COMMENT "auteur au moment de l\'action",
+        action     VARCHAR(40)  NOT NULL COMMENT "vente, reservation, suppression, import…",
+        entity     VARCHAR(40)  NULL COMMENT "objet touché : velo, prompt, precommande…",
+        entity_id  INT          NULL,
+        detail     VARCHAR(255) NULL COMMENT "de quoi relire la ligne sans jointure",
+        ip         VARCHAR(45)  NULL,
+        created_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_date        (created_at),
+        INDEX idx_user_date   (username, created_at),
+        INDEX idx_action_date (action, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
     // Inventaire de contrôle : on fige la liste des vélos que la base croit
     // présents, puis on pointe le rayon. L'écart entre les deux est le sujet.
     tbl('inventories') => 'CREATE TABLE IF NOT EXISTS ' . tbl('inventories') . ' (

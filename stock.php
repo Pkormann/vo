@@ -8,6 +8,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -28,6 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string)($_POST['customer'] ?? '')
         );
 
+        if ($sold) {
+            logAction('vente', 'velo', $bikeId, 'depuis la page Stock');
+        }
+
         $notice = $sold ? 'Vélo marqué vendu.' : 'Ce vélo était déjà vendu.';
     }
 
@@ -39,12 +44,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string)($_POST['customer'] ?? '')
         );
 
+        if ($reserved) {
+            logAction('reservation', 'velo', $bikeId, 'remise prévue : ' . ($_POST['delivery_at'] ?: 'non précisée'));
+        }
+
         $notice = $reserved
             ? 'Vélo réservé. Il compte comme vendu et sort du stock disponible.'
             : 'Ce vélo n\'est plus disponible.';
     }
 
     if ($action === 'delete') {
+        logAction('velo_suppr', 'velo', $bikeId, 'depuis la page Stock');
+
         $notice = deleteBike($bikeId)
             ? 'Vélo supprimé du stock. L\'historique des ventes n\'a pas été touché.'
             : 'Vélo introuvable.';

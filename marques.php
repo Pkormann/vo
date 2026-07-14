@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -31,6 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
     }
     $stmt->close();
+
+    logAction('rabais', 'marques', null, count($rates) . ' marque(s)');
 
     $notice = 'Taux de rabais enregistrés.';
 }

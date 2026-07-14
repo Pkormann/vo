@@ -13,6 +13,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -30,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (deleteBike($id)) {
             $deleted++;
         }
+    }
+
+    if ($deleted > 0) {
+        logAction('doublons', 'velo', null, $deleted . ' doublon(s) supprimé(s) du stock');
     }
 
     $notice = $deleted === 0

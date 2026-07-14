@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/period.php';
 require_once __DIR__ . '/includes/layout.php';
 
@@ -29,6 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ($_POST['sold_price'] ?? '') !== '' ? (float)$_POST['sold_price'] : null,
             (string)($_POST['customer'] ?? '')
         );
+
+        if ($sold) {
+            logAction('vente', 'velo', (int)($_POST['bike_id'] ?? 0), 'depuis la page Ventes');
+        }
 
         $notice = $sold
             ? 'Vente enregistrée.'

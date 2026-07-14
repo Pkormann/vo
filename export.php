@@ -14,6 +14,7 @@
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/config/prompt.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/period.php';
 require_once __DIR__ . '/includes/layout.php';
 
@@ -39,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } elseif ($action === 'save') {
         $changed = saveSetting('prompt_analyse', (string)($_POST['prompt'] ?? ''), $author);
+
+        if ($changed) {
+            logAction('prompt', 'prompt', null, 'modification enregistrée');
+        }
         $notice  = $changed
             ? 'Prompt enregistré. La version précédente est conservée dans l\'historique.'
             : 'Aucune modification à enregistrer.';
@@ -96,6 +101,8 @@ if ($wanted !== '' && isset($datasets[$wanted])) {
             ];
         }
     }
+
+    logAction('export', 'csv', null, $set['label'] . ' — ' . count($rows) . ' ligne(s)');
 
     $suffix = $set['dated'] ? '_' . $period['from'] . '_' . $period['to'] : '';
     streamCsv('vo_' . $wanted . $suffix . '.csv', $rows);

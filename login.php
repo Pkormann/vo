@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/bruteforce.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 // --- Traitement ------------------------------------------------------------
@@ -57,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd->bind_param('i', $user['id']);
             $upd->execute();
             $upd->close();
+
+            logAction('login', 'utilisateur', (int)$user['id'], 'rôle : ' . ($user['role'] ?? 'user'));
 
             if ($remember) {
                 $token = bin2hex(random_bytes(32));

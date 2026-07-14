@@ -12,6 +12,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -52,6 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['ajax'])) {
     if ($action === 'open') {
         $id = openInventory(trim((string)($_POST['label'] ?? '')) ?: null, currentUser());
 
+        if ($id !== null) {
+            logAction('inventaire', 'inventaire', $id, 'ouverture');
+        }
+
         $notice = $id === null
             ? 'Un inventaire est déjà en cours.'
             : 'Inventaire ouvert. La liste des vélos attendus est figée.';
@@ -59,6 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['ajax'])) {
         $inventory = currentInventory();
 
     } elseif ($action === 'close' && $inventory !== null) {
+        $stats = inventoryStats((int)$inventory['id']);
+        logAction('inventaire', 'inventaire', (int)$inventory['id'],
+            'clôture — ' . $stats['seen'] . ' présents, ' . $stats['missing'] . ' introuvables');
         closeInventory((int)$inventory['id']);
         $notice    = 'Inventaire clôturé. Il reste consultable comme procès-verbal.';
         $inventory = null;

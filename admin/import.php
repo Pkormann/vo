@@ -12,6 +12,7 @@
 
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/catalog.php';
+require_once __DIR__ . '/../includes/activity.php';
 require_once __DIR__ . '/../includes/layout.php';
 
 checkAuth();
@@ -127,6 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $insert->close();
                 fclose($handle);
+
+                logAction('import', 'csv', null,
+                    $report['created'] . ' créé(s), ' . $report['skipped'] . ' ignoré(s), '
+                    . count($report['rejected']) . ' rejet(s)');
             }
         }
     }

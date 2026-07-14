@@ -3,6 +3,22 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.11.0 — 2026-07-14
+
+Journal des actions (owner) et notes de version (owner + admin).
+
+- **`admin/activite.php`** : qui a fait quoi — ventes, réservations, suppressions, doublons,
+  imports, exports, modifications du prompt, pré-commandes, inventaires, connexions. Filtrable
+  par utilisateur, par action et par période.
+- Le journal **ne bloque jamais** l'action qu'il journalise : si l'écriture échoue, la vente a
+  quand même lieu. Purge automatique après deux ans.
+- Volontairement distinct d'`admin/audit.php`, qui journalise les **connexions** : la sécurité et
+  l'exploitation ne se lisent pas dans le même écran.
+- **`nouveautes.php`** : les livraisons expliquées en français courant, avec un badge « nouveau »
+  sur ce qui est arrivé depuis la dernière visite. Le contenu vit dans `config/nouveautes.php`.
+- Ce n'est **pas** un miroir des titres de commit : « bind_param cohérents » ne dit rien à un
+  vendeur de vélos. Deux publics, deux textes.
+
 ## 0.10.0 — 2026-07-13
 
 Inventaire de contrôle.

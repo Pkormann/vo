@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/catalog.php';
+require_once __DIR__ . '/includes/activity.php';
 require_once __DIR__ . '/includes/layout.php';
 
 checkAuth();
@@ -35,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
 
     if (($_POST['action'] ?? '') === 'delete' && $id > 0) {
+        logAction('velo_suppr', 'velo', $id, trim(($bike['brand'] ?? '') . ' ' . ($bike['model_name'] ?? '')));
         deleteBike($id);
 
         header('Location: ' . url('stock.php'));
@@ -100,6 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt->execute();
         $stmt->close();
+
+        logAction(
+            $id > 0 ? 'velo_edition' : 'velo_ajout',
+            'velo',
+            $id > 0 ? $id : (int)db()->insert_id,
+            trim($brand . ' ' . $model . ' ' . $size)
+        );
 
         header('Location: ' . url('stock.php'));
         exit;
