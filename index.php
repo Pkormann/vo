@@ -85,6 +85,12 @@ renderHeader('Tableau de bord', ['css' => ['admin', 'app'], 'icons' => true]);
             <span class="tool-desc muted">À la réception d'une livraison.</span>
         </a>
 
+        <a class="card tool" href="<?= e(url('inventaire.php')) ?>">
+            <i class="fa-solid fa-clipboard-check tool-icon" aria-hidden="true"></i>
+            <span class="tool-name">Inventaire</span>
+            <span class="tool-desc muted">Pointer le rayon contre la base, au téléphone.</span>
+        </a>
+
         <a class="card tool" href="<?= e(url('export.php')) ?>">
             <i class="fa-solid fa-robot tool-icon" aria-hidden="true"></i>
             <span class="tool-name">Export et analyse</span>

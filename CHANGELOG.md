@@ -3,6 +3,23 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.10.0 — 2026-07-13
+
+Inventaire de contrôle.
+
+- **`inventaire.php`** : on fige la liste des vélos que la base croit présents (stock, réservés,
+  vélos de test), puis on pointe le rayon — « Là » ou « Absent », un vélo à la fois.
+- **Pensé pour l'atelier, au téléphone** : chaque clic part en arrière-plan, la page ne se recharge
+  jamais, et on peut fermer et reprendre plus tard. Perdre sa place au 60e vélo sur 90 serait le
+  meilleur moyen de ne jamais finir un inventaire. Les boutons passent en pleine largeur sur mobile.
+- Recherche instantanée dans la liste, compteurs d'avancement mis à jour en direct.
+- **Un vélo introuvable n'est pas un incident** : c'est presque toujours une vente qu'on a oublié
+  de saisir. C'est le résultat de l'exercice, pas son échec.
+- Le snapshot est figé à l'ouverture : un vélo vendu pendant le pointage reste dans la liste,
+  sinon on ne saurait plus ce qu'on a compté.
+- Les inventaires clôturés restent consultables — c'est le procès-verbal.
+- Nouvelles tables `vo_inventories` et `vo_inventory_items`.
+
 ## 0.9.0 — 2026-07-13
 
 Réserver un vélo — et une correction de fond sur ce que « réservé » veut dire.

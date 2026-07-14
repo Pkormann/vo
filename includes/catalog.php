@@ -769,6 +769,154 @@ function salesBySize(string $from, string $to): array
     return $rows;
 }
 
+/*
+ * ---------------------------------------------------------------------------
+ * Inventaire de contrôle
+ *
+ * On fige la liste des vélos que la base croit présents (stock, réservé, test),
+ * puis on pointe le rayon. Le snapshot est volontairement figé : si un vélo se
+ * vend pendant le pointage, il reste dans la liste — sinon on ne saurait plus ce
+ * qu'on a compté, ni pourquoi le total a bougé.
+ *
+ * L'écart est le résultat, pas un incident : un vélo introuvable est presque
+ * toujours une vente jamais saisie.
+ * ---------------------------------------------------------------------------
+ */
+
+/** L'inventaire en cours, s'il y en a un. */
+function currentInventory(): ?array
+{
+    $row = db()->query(
+        'SELECT * FROM ' . tbl('inventories') . '
+         WHERE closed_at IS NULL ORDER BY started_at DESC LIMIT 1'
+    )->fetch_assoc();
+
+    return $row ?: null;
+}
+
+/**
+ * Ouvre un inventaire et fige la liste des vélos attendus.
+ * Refuse d'en ouvrir un second : deux pointages simultanés se contrediraient.
+ */
+function openInventory(?string $label, ?string $author): ?int
+{
+    if (currentInventory() !== null) {
+        return null;
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO ' . tbl('inventories') . ' (label, author) VALUES (?, ?)'
+    );
+    $stmt->bind_param('ss', $label, $author);
+    $stmt->execute();
+    $id = (int)db()->insert_id;
+    $stmt->close();
+
+    // Le snapshot : tout ce qui devrait être physiquement dans le magasin.
+    $stmt = db()->prepare(
+        'INSERT INTO ' . tbl('inventory_items') . ' (inventory_id, bike_id)
+         SELECT ?, id FROM ' . tbl('bikes') . '
+         WHERE status IN ("stock", "reserve", "test")'
+    );
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+
+    return $id;
+}
+
+/** Lignes d'un inventaire, avec le vélo attendu. */
+function inventoryItems(int $inventoryId): array
+{
+    $stmt = db()->prepare(
+        'SELECT it.id AS item_id, it.seen, it.note, it.bike_id,
+                b.size, b.color, b.status, b.entered_at,
+                COALESCE(b.list_price, m.list_price) AS list_price,
+                m.name AS model_name, m.category, m.family, m.model_year,
+                br.name AS brand
+         FROM ' . tbl('inventory_items') . ' it
+         JOIN ' . tbl('bikes') . '  b  ON b.id = it.bike_id
+         JOIN ' . tbl('models') . ' m  ON m.id = b.model_id
+         JOIN ' . tbl('brands') . ' br ON br.id = m.brand_id
+         WHERE it.inventory_id = ?
+         ORDER BY m.category, br.name, m.name, b.size'
+    );
+    $stmt->bind_param('i', $inventoryId);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    return $rows;
+}
+
+/** Pointe une ligne : vue, introuvable, ou remise à « pas encore pointée ». */
+function markInventoryItem(int $itemId, ?int $seen): bool
+{
+    $stmt = db()->prepare(
+        'UPDATE ' . tbl('inventory_items') . '
+         SET seen = ?, seen_at = IF(? IS NULL, NULL, NOW())
+         WHERE id = ?'
+    );
+    $stmt->bind_param('iii', $seen, $seen, $itemId);
+    $stmt->execute();
+    $touched = $stmt->affected_rows;
+    $stmt->close();
+
+    return $touched >= 0;
+}
+
+/** Avancement et écarts d'un inventaire. */
+function inventoryStats(int $inventoryId): array
+{
+    $stmt = db()->prepare(
+        'SELECT COUNT(*)                        AS total,
+                SUM(seen = 1)                   AS seen,
+                SUM(seen = 0)                   AS missing,
+                SUM(seen IS NULL)               AS pending
+         FROM ' . tbl('inventory_items') . '
+         WHERE inventory_id = ?'
+    );
+    $stmt->bind_param('i', $inventoryId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return [
+        'total'   => (int)$row['total'],
+        'seen'    => (int)$row['seen'],
+        'missing' => (int)$row['missing'],
+        'pending' => (int)$row['pending'],
+    ];
+}
+
+/** Clôt l'inventaire. Les lignes restent : c'est le procès-verbal. */
+function closeInventory(int $inventoryId): void
+{
+    $stmt = db()->prepare(
+        'UPDATE ' . tbl('inventories') . ' SET closed_at = NOW() WHERE id = ? AND closed_at IS NULL'
+    );
+    $stmt->bind_param('i', $inventoryId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/** Inventaires clôturés, avec leur bilan. */
+function closedInventories(): array
+{
+    return db()->query(
+        'SELECT i.*,
+                COUNT(it.id)        AS total,
+                SUM(it.seen = 1)    AS seen,
+                SUM(it.seen = 0)    AS missing
+         FROM ' . tbl('inventories') . ' i
+         LEFT JOIN ' . tbl('inventory_items') . ' it ON it.inventory_id = i.id
+         WHERE i.closed_at IS NOT NULL
+         GROUP BY i.id
+         ORDER BY i.closed_at DESC
+         LIMIT 20'
+    )->fetch_all(MYSQLI_ASSOC);
+}
+
 /** Réglage éditable, ou son défaut si rien n'a été enregistré. */
 function setting(string $name, string $default = ''): string
 {

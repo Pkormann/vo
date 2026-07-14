@@ -276,3 +276,39 @@
        la hauteur d'écran. */
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
+
+
+/* --- Inventaire ----------------------------------------------------------- */
+
+.point-actions { display: flex; gap: .3rem; }
+
+.btn-point {
+    padding: .35rem .6rem;
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+/* L'état d'une ligne doit se lire d'un coup d'œil, à bout de bras, dans un
+   atelier : la couleur porte le sens, pas seulement l'icône. */
+.js-item.is-seen    { background: var(--ok-soft); }
+.js-item.is-missing { background: var(--ko-soft); }
+.js-item.is-saving  { opacity: .55; }
+.js-item.is-error   { outline: 2px solid var(--ko); }
+
+.js-item.is-seen .js-seen {
+    background: var(--ok);
+    border-color: var(--ok);
+    color: #fff;
+}
+
+.js-item.is-missing .js-missing {
+    background: var(--ko);
+    border-color: var(--ko);
+    color: #fff;
+}
+
+/* Au téléphone, on pointe d'une main : les boutons doivent être atteignables. */
+@media (max-width: 720px) {
+    .point-actions { flex-direction: column; }
+    .btn-point { width: 100%; padding: .5rem .6rem; }
+}

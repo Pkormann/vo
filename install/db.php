@@ -110,6 +110,35 @@ $schema = [
         CONSTRAINT fk_bike_customer FOREIGN KEY (customer_id) REFERENCES ' . tbl('customers') . ' (id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 
+    // Inventaire de contrôle : on fige la liste des vélos que la base croit
+    // présents, puis on pointe le rayon. L'écart entre les deux est le sujet.
+    tbl('inventories') => 'CREATE TABLE IF NOT EXISTS ' . tbl('inventories') . ' (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        label      VARCHAR(120) NULL,
+        author     VARCHAR(100) NULL,
+        started_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+        closed_at  DATETIME     NULL COMMENT "NULL = inventaire en cours",
+        INDEX idx_closed (closed_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+    // Une ligne par vélo attendu au moment où l\'inventaire est ouvert. Le
+    // snapshot est figé : un vélo vendu pendant le pointage reste dans la liste,
+    // sinon on ne saurait plus ce qu\'on a compté.
+    tbl('inventory_items') => 'CREATE TABLE IF NOT EXISTS ' . tbl('inventory_items') . ' (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        inventory_id INT          NOT NULL,
+        bike_id      INT          NOT NULL,
+        seen         TINYINT(1)   NULL COMMENT "NULL = pas encore pointé · 1 = vu · 0 = introuvable",
+        seen_at      DATETIME     NULL,
+        note         VARCHAR(255) NULL,
+        UNIQUE KEY uq_item (inventory_id, bike_id),
+        INDEX idx_inventory (inventory_id),
+        CONSTRAINT fk_item_inventory FOREIGN KEY (inventory_id)
+            REFERENCES ' . tbl('inventories') . ' (id) ON DELETE CASCADE,
+        CONSTRAINT fk_item_bike FOREIGN KEY (bike_id)
+            REFERENCES ' . tbl('bikes') . ' (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
     // Réglages éditables depuis l'application : aujourd'hui le prompt d'analyse.
     // Une valeur absente signifie « le défaut du code fait foi » — on ne recopie
     // donc pas le défaut en base à l'installation.

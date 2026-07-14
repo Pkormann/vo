@@ -18,7 +18,8 @@ admin/       users.php · audit.php · stats.php · import.php   (rôle owner)
 install/     setup.php · db.php · migrate.php · set_owner.php   (protégés par token)
 analyse/     espace local, jamais versionné ni déployé
 login.php · logout.php · index.php
-stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php · export.php · doublons.php
+stock.php · velo.php · ventes.php · rapport.php · precommande.php · marques.php
+export.php · doublons.php · inventaire.php
 ```
 
 ## Conventions
@@ -205,6 +206,31 @@ le stock reporté.
 `splitBySize()` éclate une quantité en tailles selon le mix de ventes observé, par la **méthode du plus
 grand reste** : donner le reliquat d'arrondi à la taille la plus vendue gonflerait la taille dominante à
 chaque commande et affamerait les tailles rares.
+
+## Inventaire de contrôle (`inventaire.php`)
+
+On **fige** la liste des vélos que la base croit physiquement présents (`STATUSES_PRESENT` : stock,
+réservé, test), puis on pointe le rayon. Le snapshot est figé à l'ouverture : un vélo vendu pendant
+le pointage **reste dans la liste**, sinon on ne saurait plus ce qu'on a compté ni pourquoi le total
+a bougé.
+
+Le pointage se fait dans l'atelier, au téléphone : chaque clic part en `fetch` (CSRF inclus), la page
+ne se recharge jamais, et on peut fermer et reprendre. Recliquer sur un bouton actif annule le
+pointage.
+
+**Un vélo introuvable n'est pas un incident** : c'est presque toujours une vente jamais saisie. C'est
+le résultat de l'exercice. Les vélos trouvés en rayon mais absents de la liste s'ajoutent simplement
+via `velo.php` — l'inventaire n'a pas besoin de les connaître.
+
+Un seul inventaire peut être ouvert à la fois (`openInventory()` refuse le second) : deux pointages
+simultanés se contrediraient. Les inventaires clôturés restent consultables : c'est le procès-verbal.
+
+### `vo_inventories` / `vo_inventory_items`
+
+`vo_inventories` : `id` · `label` · `author` · `started_at` · `closed_at` (NULL = en cours).
+
+`vo_inventory_items` : `id` · `inventory_id` · `bike_id` · `seen` (NULL = pas encore pointé · 1 = vu ·
+0 = introuvable) · `seen_at` · `note`. Unique sur `(inventory_id, bike_id)`.
 
 ## Doublons de la reprise Excel (`doublons.php`)
 
