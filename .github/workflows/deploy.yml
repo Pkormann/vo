@@ -27,6 +27,11 @@ jobs:
           find . -name '*.php' -not -path './.git/*' -print0 \
             | xargs -0 -n1 -P4 php -l > /dev/null
 
+      # `php -l` ne voit pas les appels à des fonctions inexistantes : elles ne
+      # pètent qu'à l'exécution, donc en production. Ce contrôle les attrape avant.
+      - name: Vérifier que les fonctions appelées existent
+        run: php .github/scripts/check-functions.php
+
       - name: Configurer la clé SSH
         env:
           INFOMANIAK_KEY:  ${{ secrets.INFOMANIAK_KEY }}

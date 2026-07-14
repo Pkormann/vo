@@ -475,8 +475,124 @@ script[type="application/json"] { display: none; }
 .text-sm { font-size: .82rem; }
 .stack > * + * { margin-top: var(--gap); }
 
+/* --- Menu mobile ----------------------------------------------------------
+   Le même markup qu'en bureau : sur petit écran, la barre devient un tiroir et
+   les menus déroulants s'y déplient tous, en sections. Aucune duplication de
+   navigation à maintenir en double. */
+
+.nav-toggle,
+.nav-overlay,
+.nav-account { display: none; }
+
 @media (max-width: 720px) {
-    .topbar { flex-wrap: wrap; }
-    .nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
-    .topbar-user .username { display: none; }
+    .topbar { gap: .5rem; }
+
+    .nav-toggle {
+        display: inline-grid;
+        place-items: center;
+        order: 3;
+        margin-left: auto;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .topbar-user { margin-left: 0; gap: .45rem; }
+    .topbar-user .username,
+    .topbar-user .btn-ghost { display: none; }
+
+    /* Le tiroir. Il sort par la droite : c'est le côté du pouce. */
+    .nav {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 60;
+        width: min(86vw, 320px);
+        margin: 0;
+        padding: 1rem .9rem 2rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: .15rem;
+        overflow-y: auto;
+        background: var(--surface);
+        border-left: 1px solid var(--line);
+        box-shadow: -12px 0 32px rgba(17, 18, 20, .16);
+        transform: translateX(100%);
+        transition: transform .22s ease;
+    }
+
+    .nav.is-open { transform: none; }
+
+    .nav a {
+        padding: .7rem .75rem;
+        font-size: .95rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .nav-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 55;
+        background: rgba(17, 18, 20, .45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .22s ease;
+    }
+
+    .nav-overlay.is-open { opacity: 1; pointer-events: auto; }
+
+    /* Plus de flottement : les menus deviennent des sections toujours ouvertes. */
+    .menu { position: static; margin-top: .9rem; }
+
+    .menu-toggle {
+        width: 100%;
+        padding: .3rem .75rem;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--muted);
+        background: transparent;
+        pointer-events: none;   /* c'est un titre, plus un bouton */
+    }
+
+    .menu-toggle i { display: none; }
+    .menu-toggle.is-active { background: transparent; color: var(--muted); }
+
+    .menu-list {
+        display: block;
+        position: static;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .menu-list a { padding: .7rem .75rem; font-size: .95rem; }
+    .menu-desc { display: none; }
+
+    .nav-account {
+        display: block;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+    }
+
+    .nav-account .username {
+        display: block;
+        margin-bottom: .5rem;
+        padding: 0 .75rem;
+        font-size: .8rem;
+    }
+
+    /* La page ne défile pas derrière le tiroir. */
+    body.nav-open { overflow: hidden; }
 }

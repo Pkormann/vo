@@ -3,6 +3,20 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.12.1 — 2026-07-14
+
+Correctif : la 0.12.0 cassait toutes les pages.
+
+- `navMenus()`, `navMenuActive()`, `allowedNav()` et `hasUnseenRelease()` étaient **appelées par
+  le chrome mais jamais définies** : `layout.php` avait gardé son ancienne `navItems()`. Toute page
+  affichant la barre de navigation levait une fatale.
+- **`php -l` ne peut pas attraper ça** : une fonction manquante n'est pas une erreur de syntaxe,
+  elle ne se manifeste qu'à l'exécution. Le déploiement passait donc au vert avec une application
+  morte.
+- **Nouveau contrôle dans le workflow** (`.github/scripts/check-functions.php`) : analyse les jetons
+  PHP de tout le projet et refuse de déployer si une fonction appelée n'existe nulle part. Le SQL,
+  les commentaires et le JavaScript sont ignorés — seul le vrai code est analysé.
+
 ## 0.12.0 — 2026-07-14
 
 Navigation regroupée et identité visuelle.
@@ -18,6 +32,11 @@ Navigation regroupée et identité visuelle.
 - Les **Nouveautés** deviennent une icône à droite, avec une pastille quand une version a été livrée
   depuis la dernière visite.
 - Le menu se ferme au clic ailleurs, à Échap, et après avoir suivi un lien.
+- **Menu hamburger sur smartphone** : la barre devient un tiroir qui sort par la droite (le côté
+  du pouce), où « Outils » et « Admin » deviennent des sections entièrement dépliées. La
+  déconnexion s'y trouve en bas. La page ne défile plus derrière le tiroir ouvert.
+- **Aucune duplication de navigation** : le tiroir et la barre partagent le même markup, seul le
+  CSS change. Une entrée ajoutée apparaît des deux côtés, sans y penser.
 
 ## 0.11.0 — 2026-07-14
 

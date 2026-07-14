@@ -47,6 +47,12 @@ même page est une entrée de trop.
 Le filtrage par rôle passe par `allowed()` ; le contrôle serveur (`checkRole()`) reste la seule
 barrière de sécurité, la navigation n'est que du confort.
 
+Sur smartphone (≤ 720 px), la barre devient un **tiroir** ouvert par un bouton hamburger : les menus
+« Outils » et « Admin » s'y déplient en sections, et la déconnexion passe en bas du tiroir.
+
+**Le markup est le même dans les deux cas** — seul le CSS diffère. Il n'y a donc pas deux navigations
+à maintenir : une entrée ajoutée à `navItems()` ou `navMenus()` apparaît des deux côtés.
+
 Le favicon est un **SVG encodé dans l'URL** (`faviconUri()`) : net à toutes les tailles, aucun
 binaire à versionner, et il sert d'`apple-touch-icon` pour l'écran d'accueil iOS.
 
