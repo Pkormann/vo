@@ -21,6 +21,23 @@ require_once __DIR__ . '/helpers.php';
 const CDN_FONTAWESOME = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css';
 const CDN_CHARTJS     = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
 
+/**
+ * Favicon : le carré VO, en SVG encodé dans l'URL.
+ *
+ * Un SVG plutôt qu'un .ico : net à toutes les tailles, aucun fichier binaire à
+ * versionner, et il suit la charte (noir, blanc, rien d'autre).
+ */
+function faviconUri(): string
+{
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+         . '<rect width="64" height="64" rx="12" fill="#111214"/>'
+         . '<text x="32" y="43" font-family="Helvetica,Arial,sans-serif" font-size="30" '
+         . 'font-weight="700" fill="#ffffff" text-anchor="middle">VO</text>'
+         . '</svg>';
+
+    return 'data:image/svg+xml,' . rawurlencode($svg);
+}
+
 function renderHeader(string $title, array $opts = []): void
 {
     $sheets    = array_merge(['base'], $opts['css'] ?? []);
@@ -39,7 +56,10 @@ function renderHeader(string $title, array $opts = []): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#111214">
     <title><?= e($title) ?> · <?= e(APP_NAME) ?></title>
+    <link rel="icon" href="<?= e(faviconUri()) ?>">
+    <link rel="apple-touch-icon" href="<?= e(faviconUri()) ?>">
     <?php foreach ($cdnCss as $href): ?>
     <link rel="stylesheet" href="<?= e($href) ?>" crossorigin="anonymous">
     <?php endforeach; ?>
@@ -61,9 +81,30 @@ function renderHeader(string $title, array $opts = []): void
                 <?= e($item['label']) ?>
             </a>
         <?php endforeach; ?>
+
+        <?php foreach (navMenus() as $menu): ?>
+            <?php if (!$menu['items']) { continue; } ?>
+            <div class="menu">
+                <button type="button" class="menu-toggle js-menu<?= navMenuActive($menu) ? ' is-active' : '' ?>">
+                    <?= e($menu['label']) ?> <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="menu-list">
+                    <?php foreach ($menu['items'] as $item): ?>
+                        <a href="<?= e(url($item['href'])) ?>"<?= isCurrentPage($item['href']) ? ' class="is-active"' : '' ?>>
+                            <?= e($item['label']) ?>
+                            <span class="menu-desc"><?= e($item['desc']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
     </nav>
 
     <div class="topbar-user">
+        <a class="btn-icon news<?= hasUnseenRelease() ? ' has-news' : '' ?>"
+           href="<?= e(url('nouveautes.php')) ?>" title="Nouveautés">
+            <i class="fa-solid fa-gift"></i>
+        </a>
         <span class="badge badge-<?= e(currentRole()) ?>"><?= e(currentRole()) ?></span>
         <span class="username"><?= e(currentUser()) ?></span>
         <a class="btn btn-ghost" href="<?= e(url('logout.php')) ?>">Déconnexion</a>
@@ -120,6 +161,12 @@ function renderFooter(array $opts = []): void
 {
     $withMain = $opts['chrome'] ?? true;
     $scripts  = $opts['scripts'] ?? [];
+
+    // Le menu fait partie du chrome : il est présent sur toute page qui a une
+    // barre de navigation, sans que chaque page ait à y penser.
+    if ($opts['nav'] ?? true) {
+        array_unshift($scripts, url('assets/js/menu.js') . '?v=' . APP_VERSION);
+    }
 
     if ($withMain) {
         echo "</main>\n";

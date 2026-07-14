@@ -100,6 +100,85 @@ h2 { font-size: 1.05rem; }
 .nav a:hover { background: var(--surface-alt); color: var(--ink); text-decoration: none; }
 .nav a.is-active { background: var(--ink); color: #fff; }
 
+/* --- Menus déroulants de la navigation ------------------------------------ */
+
+.menu { position: relative; }
+
+.menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .4rem .7rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.menu-toggle i { font-size: .65rem; opacity: .7; }
+.menu-toggle:hover { background: var(--surface-alt); color: var(--ink); }
+.menu-toggle.is-active { background: var(--ink); color: #fff; }
+.menu.is-open .menu-toggle { background: var(--surface-alt); color: var(--ink); }
+.menu.is-open .menu-toggle.is-active { background: var(--ink); color: #fff; }
+
+.menu-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + .4rem);
+    left: 0;
+    z-index: 40;
+    min-width: 15rem;
+    padding: .35rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 10px 30px rgba(17, 18, 20, .13);
+}
+
+.menu.is-open .menu-list { display: block; }
+
+.menu-list a {
+    display: block;
+    padding: .45rem .6rem;
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-size: .875rem;
+    font-weight: 500;
+}
+
+.menu-list a:hover { background: var(--surface-alt); text-decoration: none; }
+.menu-list a.is-active { background: var(--ink); color: #fff; }
+
+.menu-desc {
+    display: block;
+    font-size: .74rem;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.menu-list a.is-active .menu-desc { color: #c8cbd0; }
+
+/* --- Pastille des nouveautés ---------------------------------------------- */
+
+.news { position: relative; }
+
+.news.has-news::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--warn);
+    border: 1.5px solid var(--surface);
+}
+
 .topbar-user {
     display: flex;
     align-items: center;

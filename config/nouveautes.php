@@ -12,6 +12,15 @@
 
 const NOUVEAUTES = [
     [
+        'version' => '0.12.0',
+        'date'    => '2026-07-14',
+        'titre'   => 'Menu réorganisé et logo dans l\'onglet',
+        'texte'   => 'La barre du haut ne garde en accès direct que le travail quotidien : stock, '
+                   . 'ventes, rapport, pré-commande. Le reste est rangé dans « Outils » et « Admin ». '
+                   . 'Le logo VO ramène à l\'accueil, et apparaît désormais dans l\'onglet du '
+                   . 'navigateur — pratique si tu ajoutes le site à l\'écran d\'accueil de ton iPhone.',
+    ],
+    [
         'version' => '0.11.0',
         'date'    => '2026-07-14',
         'titre'   => 'Journal des actions et notes de version',

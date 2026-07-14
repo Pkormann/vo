@@ -30,6 +30,26 @@ export.php · doublons.php · inventaire.php · nouveautes.php
 - **Chrome commun** via `renderHeader()` / `renderFooter()` — c'est ce qui garantit
   la présence du numéro de version en pied de page.
 
+## Navigation
+
+Le critère de rangement est la **fréquence d'usage**, pas la parenté technique.
+
+| Zone | Contenu |
+|---|---|
+| Accès direct (`navItems()`) | Stock · Ventes · Rapport · Pré-commande |
+| Menu **Outils** (`navMenus()`) | Inventaire · Doublons · Marques · Export |
+| Menu **Admin** (owner) | Import · Utilisateurs · Activité · Audit · Statistiques |
+| À droite | Nouveautés (pastille si version non vue) · rôle · déconnexion |
+
+**« Tableau de bord » ne figure pas dans la barre** : le logo VO y mène. Une entrée de plus pour la
+même page est une entrée de trop.
+
+Le filtrage par rôle passe par `allowed()` ; le contrôle serveur (`checkRole()`) reste la seule
+barrière de sécurité, la navigation n'est que du confort.
+
+Le favicon est un **SVG encodé dans l'URL** (`faviconUri()`) : net à toutes les tailles, aucun
+binaire à versionner, et il sert d'`apple-touch-icon` pour l'écran d'accueil iOS.
+
 ## Base de données
 
 La base MySQL est **partagée avec d'autres projets** : toutes les tables du projet sont

@@ -3,6 +3,22 @@
 Format : `MAJEUR.MINEUR.PATCH` — MAJEUR = incompatible · MINEUR = feature · PATCH = bug/CSS/texte.
 La version fait foi dans `config/version.php` et s'affiche en bas de chaque page.
 
+## 0.12.0 — 2026-07-14
+
+Navigation regroupée et identité visuelle.
+
+- **Favicon VO** : le carré noir de la marque, en SVG encodé dans l'URL — net à toutes les tailles,
+  aucun fichier binaire à versionner. Sert aussi d'icône `apple-touch-icon` si le site est ajouté à
+  l'écran d'accueil d'un iPhone.
+- **Navigation réduite de 14 entrées à 6.** En accès direct, le quotidien seulement : Stock, Ventes,
+  Rapport, Pré-commande. Le reste passe dans deux menus déroulants — **Outils** (Inventaire,
+  Doublons, Marques, Export) et **Admin** (Import, Utilisateurs, Activité, Audit, Statistiques).
+- **« Tableau de bord » disparaît de la barre** : le logo VO y mène déjà. Une entrée de plus pour la
+  même page, c'était une entrée de trop.
+- Les **Nouveautés** deviennent une icône à droite, avec une pastille quand une version a été livrée
+  depuis la dernière visite.
+- Le menu se ferme au clic ailleurs, à Échap, et après avoir suivi un lien.
+
 ## 0.11.0 — 2026-07-14
 
 Journal des actions (owner) et notes de version (owner + admin).
