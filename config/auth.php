@@ -33,6 +33,7 @@ function startSession(): void
         'samesite' => 'Strict',
     ]);
 
+    session_name('vo_session'); // cookie propre à l'app (évite le partage de PHPSESSID entre apps de mutatis.ch)
     session_start();
 }
 
@@ -71,7 +72,7 @@ function url(string $path = ''): string
  */
 function restoreFromRememberCookie(): bool
 {
-    $token = $_COOKIE['remember_token'] ?? '';
+    $token = $_COOKIE['vo_remember'] ?? '';
     if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
         return false;
     }
@@ -99,7 +100,7 @@ function restoreFromRememberCookie(): bool
 
 function setRememberCookie(string $token): void
 {
-    setcookie('remember_token', $token, [
+    setcookie('vo_remember', $token, [
         'expires'  => time() + REMEMBER_LIFETIME,
         'path'     => '/',
         'secure'   => isHttps(),
@@ -110,7 +111,7 @@ function setRememberCookie(string $token): void
 
 function clearRememberCookie(): void
 {
-    setcookie('remember_token', '', [
+    setcookie('vo_remember', '', [
         'expires'  => time() - 3600,
         'path'     => '/',
         'secure'   => isHttps(),

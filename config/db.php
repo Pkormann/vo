@@ -12,9 +12,14 @@ if (!defined('APP_VERSION')) {
 
 // L'inclusion ne doit jamais échouer : install/setup.php tourne justement
 // pour créer ce fichier. C'est db() qui exige une configuration valide.
-if (is_file(__DIR__ . '/secrets.php')) {
-    require_once __DIR__ . '/secrets.php';
+// Secrets : …/clients/<id>/secrets/vo.php (hors web/), sinon config/secrets.php.
+foreach ([dirname(__DIR__, 3) . '/secrets/vo.php', __DIR__ . '/secrets.php'] as $__secret) {
+    if (is_file($__secret)) {
+        require_once $__secret;
+        break;
+    }
 }
+unset($__secret);
 
 function isConfigured(): bool
 {
