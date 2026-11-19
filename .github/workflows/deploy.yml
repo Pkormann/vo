@@ -50,7 +50,7 @@ jobs:
         # d'office tout ce qui est --exclude : les chemins ci-dessous survivent à
         # chaque déploiement. Ne jamais ajouter --delete-excluded.
         run: |
-          rsync -avz --delete \
+          rsync -avz --exclude='*.md' --exclude='*.example*' --delete \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.claude/' \
